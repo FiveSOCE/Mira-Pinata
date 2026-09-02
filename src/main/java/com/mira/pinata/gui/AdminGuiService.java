@@ -29,9 +29,9 @@ public final class AdminGuiService {
 
     public void openMain(Player player) {
         Inventory inv = base(Menu.MAIN, 27, "&5Mira Pinata Admin");
-        inv.setItem(10, button(Material.ZOMBIE_HEAD, "&dBoss Settings", List.of("&7Name, health scaling, damage and knockback")));
+        inv.setItem(10, button(Material.ZOMBIE_HEAD, "&dBoss Settings", List.of("&7Name, health scaling, real-hit rules, damage and knockback")));
         inv.setItem(11, button(Material.NETHERITE_CHESTPLATE, "&dGear", List.of("&7Set the Zombie's exact equipment")));
-        inv.setItem(12, button(Material.CHEST, "&dRewards", List.of("&7Per-hit loot pool and top-hitter bonus")));
+        inv.setItem(12, button(Material.CHEST, "&dRewards", List.of("&7Exact loot items and independent drop chances")));
         inv.setItem(13, button(Material.BLAZE_POWDER, "&dRandom Effects", List.of("&7Configure every random effect")));
         inv.setItem(14, button(Material.WRITABLE_BOOK, "&dChat Messages", List.of("&7Edit all Pinata messages with & colour codes")));
         inv.setItem(15, button(Material.CLOCK, "&dSchedule", List.of("&7Automatic event time and countdown")));
@@ -47,6 +47,7 @@ public final class AdminGuiService {
         boolean auto = plugin.getConfig().getBoolean("boss.auto-scale-health", true);
         inv.setItem(11, toggle(Material.COMPARATOR, "&dAutomatic Health Scaling", "boss.auto-scale-health", "&7Current scaled health: &f" + manager.scaledHitsForCurrentPlayers() + " hits"));
         inv.setItem(12, button(Material.REDSTONE, "&dManual Hit Health", List.of("&f" + plugin.getConfig().getInt("boss.hits") + " hits", auto ? "&7Currently ignored while scaling is enabled" : "&aManual health is active", "&7Editing this automatically disables scaling")));
+        inv.setItem(13, button(Material.IRON_NUGGET, "&dMelee Charge", List.of("&f" + Math.round(plugin.getConfig().getDouble("boss.minimum-melee-charge", 0.90D) * 100D) + "%", "&7How charged a melee swing must be to count")));
         inv.setItem(14, button(Material.IRON_SWORD, "&dAttack Damage", List.of("&f" + plugin.getConfig().getDouble("boss.attack-damage"), "&7Click to edit")));
         inv.setItem(16, button(Material.PISTON, "&dWeapon Knockback", List.of("&fLevel " + plugin.getConfig().getInt("boss.knockback"), "&7Click to edit")));
         inv.setItem(22, back());
@@ -62,16 +63,57 @@ public final class AdminGuiService {
     public void saveGear(Inventory inv) { plugin.getConfig().set("gear.helmet", cloneOrNull(inv.getItem(10))); plugin.getConfig().set("gear.chestplate", cloneOrNull(inv.getItem(11))); plugin.getConfig().set("gear.leggings", cloneOrNull(inv.getItem(12))); plugin.getConfig().set("gear.boots", cloneOrNull(inv.getItem(13))); plugin.getConfig().set("gear.weapon", cloneOrNull(inv.getItem(15))); plugin.saveConfig(); }
 
     public void openRewards(Player player) {
+        migrateLegacyRewards();
         Inventory inv = Bukkit.createInventory(new Holder(Menu.REWARDS), 54, plugin.component("&5Pinata Rewards"));
-        List<?> raw = plugin.getConfig().getList("rewards.items", Collections.emptyList()); int slot = 0; for (Object obj : raw) if (obj instanceof ItemStack stack && slot < 45) inv.setItem(slot++, stack.clone());
+        for (int slot = 0; slot < 45; slot++) {
+            Object raw = plugin.getConfig().get("rewards.slots." + slot + ".item");
+            if (raw instanceof ItemStack stack && !stack.getType().isAir()) inv.setItem(slot, stack.clone());
+        }
         ItemStack filler = filler(); for (int i = 45; i < 54; i++) inv.setItem(i, filler.clone());
-        inv.setItem(46, toggle(Material.CHEST, "&dPer-Hit Reward", "rewards.per-hit-random-item", "&7Every valid hit rolls one random pool item"));
+        inv.setItem(45, button(Material.BOOK, "&eReward Chances", List.of("&7Right-click any reward item", "&7to set its independent drop chance.", "&7Supports decimals: 1, 0.5, 0.01 etc.")));
+        inv.setItem(46, toggle(Material.CHEST, "&dPer-Hit Loot Rolls", "rewards.per-hit-enabled", "&7Every accepted combat hit independently rolls every reward"));
         inv.setItem(49, back());
         inv.setItem(52, toggle(Material.GOLD_INGOT, "&6Top Hitter Bonus", "rewards.top-hitter-extra-item", "&7Top hitter gets one extra random pool item"));
         player.openInventory(inv);
     }
 
-    public void saveRewards(Inventory inv) { List<ItemStack> rewards = new ArrayList<>(); for (int i=0;i<45;i++){ ItemStack item=inv.getItem(i); if(item!=null&&!item.getType().isAir()) rewards.add(item.clone()); } plugin.getConfig().set("rewards.items", rewards); plugin.saveConfig(); }
+    public void saveRewards(Inventory inv) {
+        for (int slot = 0; slot < 45; slot++) {
+            ItemStack item = inv.getItem(slot);
+            String base = "rewards.slots." + slot;
+            if (item == null || item.getType().isAir()) {
+                plugin.getConfig().set(base + ".item", null);
+                continue;
+            }
+            plugin.getConfig().set(base + ".item", item.clone());
+            if (!plugin.getConfig().contains(base + ".chance")) plugin.getConfig().set(base + ".chance", 100.0D);
+        }
+        plugin.saveConfig();
+    }
+
+    public void requestRewardChance(Player player, Inventory inv, int slot) {
+        if (slot < 0 || slot >= 45) return;
+        ItemStack item = inv.getItem(slot);
+        if (item == null || item.getType().isAir()) return;
+        saveRewards(inv);
+        double current = plugin.getConfig().getDouble("rewards.slots." + slot + ".chance", 100.0D);
+        requestChat(player, "rewards.chance." + slot, "&eType the drop chance from 0 to 100 for this reward. Current: &f" + trim(current) + "%&e.");
+    }
+
+    private void migrateLegacyRewards() {
+        if (plugin.getConfig().isConfigurationSection("rewards.slots") && !Objects.requireNonNull(plugin.getConfig().getConfigurationSection("rewards.slots")).getKeys(false).isEmpty()) return;
+        List<?> old = plugin.getConfig().getList("rewards.items", Collections.emptyList());
+        List<ItemStack> items = new ArrayList<>();
+        for (Object obj : old) if (obj instanceof ItemStack stack && !stack.getType().isAir()) items.add(stack.clone());
+        if (items.isEmpty()) return;
+        double chance = 100.0D / items.size();
+        for (int i = 0; i < Math.min(45, items.size()); i++) {
+            plugin.getConfig().set("rewards.slots." + i + ".item", items.get(i));
+            plugin.getConfig().set("rewards.slots." + i + ".chance", chance);
+        }
+        plugin.getConfig().set("rewards.items", null);
+        plugin.saveConfig();
+    }
 
     public void openEffects(Player player) {
         Inventory inv = base(Menu.EFFECTS, 36, "&5Pinata Random Effects");
@@ -90,19 +132,35 @@ public final class AdminGuiService {
     public void requestChat(Player player,String path,String prompt){ pendingChat.put(player.getUniqueId(),path); player.closeInventory(); plugin.msg(player,prompt+" &7Type &ccancel &7to stop."); }
     public String takePending(UUID uuid){return pendingChat.remove(uuid);} public boolean hasPending(UUID uuid){return pendingChat.containsKey(uuid);}
 
-    public void applyChat(Player player,String path,String value){ try { switch(path){
-        case "boss.name","messages.prefix","messages.countdown","messages.spawned","messages.defeated","messages.slayer","messages.top-hitter","messages.no-spawn","messages.already-active","messages.stopped" -> plugin.getConfig().set(path,value);
-        case "schedule.time" -> { try{LocalTime.parse(value,TIME);}catch(DateTimeParseException ex){throw new IllegalArgumentException();} plugin.getConfig().set(path,value); }
-        case "boss.hits" -> { plugin.getConfig().set(path,Math.max(1,Integer.parseInt(value))); plugin.getConfig().set("boss.auto-scale-health",false); }
-        case "effects.interval-seconds","schedule.countdown-seconds" -> plugin.getConfig().set(path,Math.max(1,Integer.parseInt(value)));
-        case "boss.knockback" -> plugin.getConfig().set(path,Math.max(0,Integer.parseInt(value))); case "boss.attack-damage" -> plugin.getConfig().set(path,Math.max(0D,Double.parseDouble(value)));
-        case "effects.speed.level" -> plugin.getConfig().set("effects.speed.amplifier",Math.max(0,Integer.parseInt(value)-1)); case "effects.speed.duration-seconds" -> plugin.getConfig().set("effects.speed.duration-ticks",secondsToTicks(value)); case "effects.baby.duration-seconds" -> plugin.getConfig().set("effects.baby.duration-ticks",secondsToTicks(value)); case "effects.invisibility.duration-seconds" -> plugin.getConfig().set("effects.invisibility.duration-ticks",secondsToTicks(value)); default -> throw new IllegalArgumentException(); }
-        plugin.saveConfig(); plugin.msg(player,"&aUpdated &f"+path+"&a."); openForPath(player,path);
-    } catch(RuntimeException ex){ plugin.msg(player,"&cInvalid value. Nothing was changed."); } }
+    public void applyChat(Player player,String path,String value){
+        try {
+            if (path.startsWith("rewards.chance.")) {
+                int slot = Integer.parseInt(path.substring("rewards.chance.".length()));
+                double chance = Double.parseDouble(value);
+                if (!Double.isFinite(chance) || chance < 0D || chance > 100D) throw new IllegalArgumentException();
+                plugin.getConfig().set("rewards.slots." + slot + ".chance", chance);
+                plugin.saveConfig();
+                plugin.msg(player, "&aReward chance set to &f" + trim(chance) + "%&a.");
+                openRewards(player);
+                return;
+            }
 
+            switch(path){
+                case "boss.name","messages.prefix","messages.countdown","messages.spawned","messages.defeated","messages.slayer","messages.top-hitter","messages.no-spawn","messages.already-active","messages.stopped" -> plugin.getConfig().set(path,value);
+                case "schedule.time" -> { try{LocalTime.parse(value,TIME);}catch(DateTimeParseException ex){throw new IllegalArgumentException();} plugin.getConfig().set(path,value); }
+                case "boss.hits" -> { plugin.getConfig().set(path,Math.max(1,Integer.parseInt(value))); plugin.getConfig().set("boss.auto-scale-health",false); }
+                case "boss.minimum-melee-charge" -> { double pct=Double.parseDouble(value); if(pct>1D)pct/=100D; if(!Double.isFinite(pct)||pct<0.1D||pct>1D)throw new IllegalArgumentException(); plugin.getConfig().set(path,pct); }
+                case "effects.interval-seconds","schedule.countdown-seconds" -> plugin.getConfig().set(path,Math.max(1,Integer.parseInt(value)));
+                case "boss.knockback" -> plugin.getConfig().set(path,Math.max(0,Integer.parseInt(value))); case "boss.attack-damage" -> plugin.getConfig().set(path,Math.max(0D,Double.parseDouble(value)));
+                case "effects.speed.level" -> plugin.getConfig().set("effects.speed.amplifier",Math.max(0,Integer.parseInt(value)-1)); case "effects.speed.duration-seconds" -> plugin.getConfig().set("effects.speed.duration-ticks",secondsToTicks(value)); case "effects.baby.duration-seconds" -> plugin.getConfig().set("effects.baby.duration-ticks",secondsToTicks(value)); case "effects.invisibility.duration-seconds" -> plugin.getConfig().set("effects.invisibility.duration-ticks",secondsToTicks(value)); default -> throw new IllegalArgumentException(); }
+            plugin.saveConfig(); plugin.msg(player,"&aUpdated &f"+path+"&a."); openForPath(player,path);
+        } catch(RuntimeException ex){ plugin.msg(player,"&cInvalid value. Nothing was changed."); if(path.startsWith("rewards."))openRewards(player); }
+    }
+
+    private String trim(double value){return value==Math.rint(value)?Long.toString(Math.round(value)):Double.toString(value);}
     private int secondsToTicks(String value){double s=Double.parseDouble(value);if(!Double.isFinite(s)||s<=0D)throw new IllegalArgumentException();return Math.max(1,(int)Math.round(s*20D));}
     private String ticksToSeconds(String path){double s=plugin.getConfig().getInt(path,40)/20D;return s==Math.rint(s)?Integer.toString((int)s):Double.toString(s);}
-    private void openForPath(Player p,String path){if(path.startsWith("boss."))openBoss(p);else if(path.startsWith("messages."))openMessages(p);else if(path.startsWith("effects."))openEffects(p);else if(path.startsWith("schedule."))openSchedule(p);else openMain(p);}
+    private void openForPath(Player p,String path){if(path.startsWith("boss."))openBoss(p);else if(path.startsWith("messages."))openMessages(p);else if(path.startsWith("effects."))openEffects(p);else if(path.startsWith("schedule."))openSchedule(p);else if(path.startsWith("rewards."))openRewards(p);else openMain(p);}
     public void toggle(String path){plugin.getConfig().set(path,!plugin.getConfig().getBoolean(path,false));plugin.saveConfig();}
     private Inventory base(Menu menu,int size,String title){Inventory inv=Bukkit.createInventory(new Holder(menu),size,plugin.component(title));ItemStack f=filler();for(int i=0;i<size;i++)inv.setItem(i,f.clone());return inv;}
     public ItemStack filler(){ItemStack item=new ItemStack(Material.GRAY_STAINED_GLASS_PANE);ItemMeta meta=item.getItemMeta();meta.displayName(Component.text(" "));meta.setEnchantmentGlintOverride(true);item.setItemMeta(meta);return item;}
