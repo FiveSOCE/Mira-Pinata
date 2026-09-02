@@ -17,6 +17,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -32,7 +33,7 @@ public final class PinataManager {
     private BukkitTask countdownTask;
     private BukkitTask effectTask;
     private BukkitTask scheduleTask;
-    private String lastScheduledMinute = "";
+    private String lastScheduledRun = "";
 
     public PinataManager(MiraPinataPlugin plugin) {
         this.plugin = plugin;
@@ -56,8 +57,9 @@ public final class PinataManager {
             if (!plugin.getConfig().getBoolean("schedule.enabled", false)) return;
             String wanted = plugin.getConfig().getString("schedule.time", "20:00");
             String now = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
-            if (!now.equals(wanted) || now.equals(lastScheduledMinute)) return;
-            lastScheduledMinute = now;
+            String runKey = LocalDate.now() + " " + now;
+            if (!now.equals(wanted) || runKey.equals(lastScheduledRun)) return;
+            lastScheduledRun = runKey;
             startCountdown();
         }, 20L, 20L);
     }
@@ -113,7 +115,7 @@ public final class PinataManager {
 
         String configuredName = plugin.getConfig().getString("boss.name", "&6&lMira Pinata");
         plugin.broadcast(plugin.getConfig().getString("messages.spawned", "&6&l%name% &ahas spawned!")
-                .replace("%name%", plugin.colour(configuredName)));
+                .replace("%name%", configuredName));
         startRandomEffects();
     }
 
@@ -191,7 +193,7 @@ public final class PinataManager {
         stopRuntimeTasks();
 
         plugin.broadcast(plugin.getConfig().getString("messages.defeated", "&a%name% has been defeated!")
-                .replace("%name%", plugin.colour(bossName)));
+                .replace("%name%", bossName));
 
         Map.Entry<UUID, Integer> top = hits.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
         if (top != null) {
