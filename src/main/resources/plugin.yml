@@ -1,5 +1,5 @@
 name: MiraPinata
-version: 0.1.2
+version: 0.1.3
 main: com.mira.pinata.MiraPinataPlugin
 api-version: '1.21'
 authors: [FiveS]
