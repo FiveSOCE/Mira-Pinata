@@ -10,17 +10,14 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 
 public final class AdminGuiListener implements Listener {
     private final MiraPinataPlugin plugin;
     private final AdminGuiService gui;
     private final PinataManager manager;
 
-    public AdminGuiListener(MiraPinataPlugin plugin, AdminGuiService gui, PinataManager manager) {
-        this.plugin = plugin;
-        this.gui = gui;
-        this.manager = manager;
-    }
+    public AdminGuiListener(MiraPinataPlugin plugin, AdminGuiService gui, PinataManager manager) { this.plugin = plugin; this.gui = gui; this.manager = manager; }
 
     @EventHandler
     public void onClick(InventoryClickEvent event) {
@@ -28,7 +25,6 @@ public final class AdminGuiListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player player)) return;
         Inventory top = event.getView().getTopInventory();
         int raw = event.getRawSlot();
-
         if (holder.menu() == AdminGuiService.Menu.GEAR) { handleGear(event, player, top, raw); return; }
         if (holder.menu() == AdminGuiService.Menu.REWARDS) { handleRewards(event, player, top, raw); return; }
 
@@ -57,6 +53,7 @@ public final class AdminGuiListener implements Listener {
             case 10 -> gui.requestChat(player, "boss.name", "&eType the new Pinata name. Standard & colour/format codes are supported, e.g. &c&l.");
             case 11 -> { gui.toggle("boss.auto-scale-health"); gui.openBoss(player); }
             case 12 -> gui.requestChat(player, "boss.hits", "&eType the manual number of hits. Saving this disables automatic scaling.");
+            case 13 -> gui.requestChat(player, "boss.minimum-melee-charge", "&eType the required melee charge as 10-100 or 0.1-1.0. Default is 90%.");
             case 14 -> gui.requestChat(player, "boss.attack-damage", "&eType the Zombie's attack damage.");
             case 16 -> gui.requestChat(player, "boss.knockback", "&eType the weapon Knockback level. 0 disables it.");
             case 22 -> gui.openMain(player);
@@ -109,7 +106,15 @@ public final class AdminGuiListener implements Listener {
     }
 
     private void handleRewards(InventoryClickEvent event, Player player, Inventory top, int raw) {
-        if (raw == 46) { event.setCancelled(true); gui.saveRewards(top); gui.toggle("rewards.per-hit-random-item"); gui.openRewards(player); return; }
+        if (raw >= 0 && raw < 45 && event.isRightClick()) {
+            ItemStack item = top.getItem(raw);
+            if (item != null && !item.getType().isAir()) {
+                event.setCancelled(true);
+                gui.requestRewardChance(player, top, raw);
+            }
+            return;
+        }
+        if (raw == 46) { event.setCancelled(true); gui.saveRewards(top); gui.toggle("rewards.per-hit-enabled"); gui.openRewards(player); return; }
         if (raw == 52) { event.setCancelled(true); gui.saveRewards(top); gui.toggle("rewards.top-hitter-extra-item"); gui.openRewards(player); return; }
         if (raw == 49) { event.setCancelled(true); gui.saveRewards(top); gui.openMain(player); return; }
         if (raw >= 45 && raw < top.getSize()) event.setCancelled(true);
