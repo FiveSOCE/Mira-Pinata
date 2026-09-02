@@ -1,0 +1,36 @@
+name: Release v0.1.2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-v0.1.2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 13fecb9352f9b4586d4a3c7851914cadd8ecf22b
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10'
+      - name: Build
+        run: gradle clean build --stacktrace
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v0.1.2 build/libs/MiraPinata-0.1.2.jar \
+            --target 13fecb9352f9b4586d4a3c7851914cadd8ecf22b \
+            --title "MiraPinata v0.1.2" \
+            --notes "Adds one loot roll per successful hit, automatic 50-hits-per-5-players health scaling with manual override, a configurable last-hit slayer announcement, a larger staggered firework finale, and explicit legacy & colour/format support throughout GUI-editable names and chat messages."
