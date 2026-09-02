@@ -51,6 +51,11 @@ public final class PinataManager {
         return pinata;
     }
 
+    public int scaledHitsForCurrentPlayers() {
+        int players = Math.max(1, Bukkit.getOnlinePlayers().size());
+        return ((players - 1) / 5 + 1) * 50;
+    }
+
     public void startScheduler() {
         if (scheduleTask != null) scheduleTask.cancel();
         scheduleTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
@@ -90,7 +95,10 @@ public final class PinataManager {
         Location location = configuredSpawn();
         if (location == null) return;
 
-        maxHits = Math.max(1, plugin.getConfig().getInt("boss.hits", 250));
+        boolean autoScale = plugin.getConfig().getBoolean("boss.auto-scale-health", true);
+        maxHits = autoScale
+                ? scaledHitsForCurrentPlayers()
+                : Math.max(1, plugin.getConfig().getInt("boss.hits", 250));
         remainingHits = maxHits;
         hits.clear();
 
@@ -109,7 +117,7 @@ public final class PinataManager {
         });
 
         String cleanName = ChatColor.stripColor(pinata.getCustomName() == null ? "Mira Pinata" : pinata.getCustomName());
-        bossBar = Bukkit.createBossBar(cleanName, BarColor.PURPLE, BarStyle.SEGMENTED_10);
+        bossBar = Bukkit.createBossBar(cleanName + " - " + maxHits + " hits", BarColor.PURPLE, BarStyle.SEGMENTED_10);
         bossBar.setProgress(1.0);
         for (Player player : Bukkit.getOnlinePlayers()) bossBar.addPlayer(player);
 
@@ -142,12 +150,20 @@ public final class PinataManager {
 
     public void registerHit(Player player) {
         if (!active()) return;
+
         remainingHits = Math.max(0, remainingHits - 1);
         hits.merge(player.getUniqueId(), 1, Integer::sum);
+
+        if (plugin.getConfig().getBoolean("rewards.per-hit-random-item", true)) {
+            List<ItemStack> rewards = configuredRewards();
+            if (!rewards.isEmpty()) giveRandom(player, rewards);
+        }
+
         if (bossBar != null) bossBar.setProgress(Math.max(0.0, Math.min(1.0, remainingHits / (double) maxHits)));
         pinata.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, pinata.getLocation().add(0, 1, 0), 6, 0.25, 0.35, 0.25, 0.02);
         pinata.getWorld().playSound(pinata.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.45f, 1.45f);
-        if (remainingHits <= 0) finishEvent();
+
+        if (remainingHits <= 0) finishEvent(player.getUniqueId());
     }
 
     private void startRandomEffects() {
@@ -184,47 +200,53 @@ public final class PinataManager {
         }
     }
 
-    public void finishEvent() {
+    private void finishEvent(UUID slayerUuid) {
         if (!active()) return;
+
         String bossName = plugin.getConfig().getString("boss.name", "&6&lMira Pinata");
         Location death = pinata.getLocation().clone();
         pinata.remove();
         pinata = null;
         stopRuntimeTasks();
 
-        plugin.broadcast(plugin.getConfig().getString("messages.defeated", "&a%name% has been defeated!")
+        Player slayer = Bukkit.getPlayer(slayerUuid);
+        String slayerName = slayer != null ? slayer.getName() : Optional.ofNullable(Bukkit.getOfflinePlayer(slayerUuid).getName()).orElse("Unknown");
+        plugin.broadcast(plugin.getConfig().getString("messages.slayer", "&6%player% &fHas slain %name%&f!")
+                .replace("%player%", slayerName)
+                .replace("%name%", bossName));
+
+        plugin.broadcast(plugin.getConfig().getString("messages.defeated", "&a%name% &fhas been defeated!")
                 .replace("%name%", bossName));
 
         Map.Entry<UUID, Integer> top = hits.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
         if (top != null) {
             Player topPlayer = Bukkit.getPlayer(top.getKey());
             String playerName = topPlayer != null ? topPlayer.getName() : Bukkit.getOfflinePlayer(top.getKey()).getName();
-            plugin.broadcast(plugin.getConfig().getString("messages.top-hitter", "&6%player% &ewas top with &f%hits% &ehits!")
+            plugin.broadcast(plugin.getConfig().getString("messages.top-hitter", "&6%player% &ewas the top hitter with &f%hits% &ehits!")
                     .replace("%player%", playerName == null ? "Unknown" : playerName)
                     .replace("%hits%", Integer.toString(top.getValue())));
         }
 
-        rewardParticipants(top == null ? null : top.getKey());
+        rewardTopHitter(top == null ? null : top.getKey());
         fireworks(death);
         hits.clear();
     }
 
-    private void rewardParticipants(UUID top) {
+    private void rewardTopHitter(UUID top) {
+        if (top == null || !plugin.getConfig().getBoolean("rewards.top-hitter-extra-item", true)) return;
+        Player player = Bukkit.getPlayer(top);
+        if (player == null) return;
+        List<ItemStack> rewards = configuredRewards();
+        if (!rewards.isEmpty()) giveRandom(player, rewards);
+    }
+
+    private List<ItemStack> configuredRewards() {
         List<?> raw = plugin.getConfig().getList("rewards.items", Collections.emptyList());
         List<ItemStack> rewards = new ArrayList<>();
-        for (Object obj : raw) if (obj instanceof ItemStack stack && !stack.getType().isAir()) rewards.add(stack.clone());
-        if (rewards.isEmpty()) return;
-
-        if (plugin.getConfig().getBoolean("rewards.participant-random-item", true)) {
-            for (UUID uuid : hits.keySet()) {
-                Player player = Bukkit.getPlayer(uuid);
-                if (player != null) giveRandom(player, rewards);
-            }
+        for (Object obj : raw) {
+            if (obj instanceof ItemStack stack && !stack.getType().isAir()) rewards.add(stack.clone());
         }
-        if (top != null && plugin.getConfig().getBoolean("rewards.top-hitter-extra-item", true)) {
-            Player player = Bukkit.getPlayer(top);
-            if (player != null) giveRandom(player, rewards);
-        }
+        return rewards;
     }
 
     private void giveRandom(Player player, List<ItemStack> rewards) {
@@ -234,12 +256,30 @@ public final class PinataManager {
     }
 
     private void fireworks(Location location) {
-        for (int i = 0; i < 3; i++) {
-            Firework firework = location.getWorld().spawn(location.clone().add(0, 1, 0), Firework.class);
-            FireworkMeta meta = firework.getFireworkMeta();
-            meta.addEffect(FireworkEffect.builder().withColor(Color.AQUA, Color.RED, Color.LIME).withFade(Color.YELLOW).flicker(true).trail(true).build());
-            meta.setPower(1);
-            firework.setFireworkMeta(meta);
+        for (int i = 0; i < 12; i++) {
+            final int index = i;
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                World world = location.getWorld();
+                if (world == null) return;
+                ThreadLocalRandom random = ThreadLocalRandom.current();
+                Location burst = location.clone().add(random.nextDouble(-3.0, 3.0), 0.5 + random.nextDouble(0.0, 2.0), random.nextDouble(-3.0, 3.0));
+                Firework firework = world.spawn(burst, Firework.class);
+                FireworkMeta meta = firework.getFireworkMeta();
+                Color primary = switch (index % 4) {
+                    case 0 -> Color.AQUA;
+                    case 1 -> Color.RED;
+                    case 2 -> Color.LIME;
+                    default -> Color.YELLOW;
+                };
+                meta.addEffect(FireworkEffect.builder()
+                        .withColor(primary, Color.WHITE)
+                        .withFade(Color.PURPLE)
+                        .flicker(true)
+                        .trail(true)
+                        .build());
+                meta.setPower(1);
+                firework.setFireworkMeta(meta);
+            }, (i % 6) * 4L);
         }
     }
 
