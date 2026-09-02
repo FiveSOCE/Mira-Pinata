@@ -29,18 +29,11 @@ public final class AdminGuiListener implements Listener {
         Inventory top = event.getView().getTopInventory();
         int raw = event.getRawSlot();
 
-        if (holder.menu() == AdminGuiService.Menu.GEAR) {
-            handleGear(event, player, top, raw);
-            return;
-        }
-        if (holder.menu() == AdminGuiService.Menu.REWARDS) {
-            handleRewards(event, player, top, raw);
-            return;
-        }
+        if (holder.menu() == AdminGuiService.Menu.GEAR) { handleGear(event, player, top, raw); return; }
+        if (holder.menu() == AdminGuiService.Menu.REWARDS) { handleRewards(event, player, top, raw); return; }
 
         event.setCancelled(true);
         if (raw < 0 || raw >= top.getSize()) return;
-
         switch (holder.menu()) {
             case MAIN -> handleMain(player, raw);
             case BOSS -> handleBoss(player, raw);
@@ -53,34 +46,17 @@ public final class AdminGuiListener implements Listener {
 
     private void handleMain(Player player, int slot) {
         switch (slot) {
-            case 10 -> gui.openBoss(player);
-            case 11 -> gui.openGear(player);
-            case 12 -> gui.openRewards(player);
-            case 13 -> gui.openEffects(player);
-            case 14 -> gui.openMessages(player);
-            case 15 -> gui.openSchedule(player);
-            case 16 -> {
-                manager.setSpawn(player.getLocation());
-                plugin.msg(player, "&aPinata spawn set to your exact current location.");
-                gui.openMain(player);
-            }
-            case 22 -> {
-                if (manager.active() || manager.countingDown()) {
-                    manager.stopEvent(true);
-                } else if (!manager.startCountdown()) {
-                    plugin.msg(player, manager.configuredSpawn() == null
-                            ? plugin.getConfig().getString("messages.no-spawn", "&cSet the spawn location first.")
-                            : plugin.getConfig().getString("messages.already-active", "&cA Pinata event is already active."));
-                }
-                player.closeInventory();
-            }
+            case 10 -> gui.openBoss(player); case 11 -> gui.openGear(player); case 12 -> gui.openRewards(player); case 13 -> gui.openEffects(player); case 14 -> gui.openMessages(player); case 15 -> gui.openSchedule(player);
+            case 16 -> { manager.setSpawn(player.getLocation()); plugin.msg(player, "&aPinata spawn set to your exact current location."); gui.openMain(player); }
+            case 22 -> { if (manager.active() || manager.countingDown()) manager.stopEvent(true); else if (!manager.startCountdown()) plugin.msg(player, manager.configuredSpawn() == null ? plugin.getConfig().getString("messages.no-spawn", "&cSet the spawn location first.") : plugin.getConfig().getString("messages.already-active", "&cA Pinata event is already active.")); player.closeInventory(); }
         }
     }
 
     private void handleBoss(Player player, int slot) {
         switch (slot) {
-            case 10 -> gui.requestChat(player, "boss.name", "&eType the new Pinata name, including & colour codes if wanted.");
-            case 12 -> gui.requestChat(player, "boss.hits", "&eType the required number of player hits.");
+            case 10 -> gui.requestChat(player, "boss.name", "&eType the new Pinata name. Standard & colour/format codes are supported, e.g. &c&l.");
+            case 11 -> { gui.toggle("boss.auto-scale-health"); gui.openBoss(player); }
+            case 12 -> gui.requestChat(player, "boss.hits", "&eType the manual number of hits. Saving this disables automatic scaling.");
             case 14 -> gui.requestChat(player, "boss.attack-damage", "&eType the Zombie's attack damage.");
             case 16 -> gui.requestChat(player, "boss.knockback", "&eType the weapon Knockback level. 0 disables it.");
             case 22 -> gui.openMain(player);
@@ -103,14 +79,15 @@ public final class AdminGuiListener implements Listener {
 
     private void handleMessages(Player player, int slot) {
         switch (slot) {
-            case 10 -> gui.requestChat(player, "messages.prefix", "&eType the message prefix.");
-            case 11 -> gui.requestChat(player, "messages.countdown", "&eType the countdown message. Use %seconds%.");
-            case 12 -> gui.requestChat(player, "messages.spawned", "&eType the spawn message. Use %name%.");
-            case 13 -> gui.requestChat(player, "messages.defeated", "&eType the defeated message. Use %name%.");
-            case 14 -> gui.requestChat(player, "messages.top-hitter", "&eType the top-hitter message. Use %player% and %hits%.");
-            case 15 -> gui.requestChat(player, "messages.no-spawn", "&eType the spawn-not-set message.");
-            case 16 -> gui.requestChat(player, "messages.already-active", "&eType the already-active message.");
-            case 22 -> gui.requestChat(player, "messages.stopped", "&eType the stopped-event message.");
+            case 10 -> gui.requestChat(player, "messages.prefix", "&eType the message prefix. & colour/format codes are supported.");
+            case 11 -> gui.requestChat(player, "messages.countdown", "&eType the countdown message. Use %seconds%. & codes are supported.");
+            case 12 -> gui.requestChat(player, "messages.spawned", "&eType the spawn message. Use %name%. & codes are supported.");
+            case 13 -> gui.requestChat(player, "messages.defeated", "&eType the defeated message. Use %name%. & codes are supported.");
+            case 14 -> gui.requestChat(player, "messages.top-hitter", "&eType the top-hitter message. Use %player% and %hits%. & codes are supported.");
+            case 15 -> gui.requestChat(player, "messages.no-spawn", "&eType the spawn-not-set message. & codes are supported.");
+            case 16 -> gui.requestChat(player, "messages.already-active", "&eType the already-active message. & codes are supported.");
+            case 19 -> gui.requestChat(player, "messages.slayer", "&eType the slayer message. Use %player% and %name%. & codes are supported.");
+            case 22 -> gui.requestChat(player, "messages.stopped", "&eType the stopped-event message. & codes are supported.");
             case 31 -> gui.openMain(player);
         }
     }
@@ -126,56 +103,26 @@ public final class AdminGuiListener implements Listener {
 
     private void handleGear(InventoryClickEvent event, Player player, Inventory top, int raw) {
         boolean allowedTop = raw == 10 || raw == 11 || raw == 12 || raw == 13 || raw == 15;
-        if (raw == 26) {
-            event.setCancelled(true);
-            gui.saveGear(top);
-            gui.openMain(player);
-            return;
-        }
+        if (raw == 26) { event.setCancelled(true); gui.saveGear(top); gui.openMain(player); return; }
         if (raw >= 0 && raw < top.getSize() && !allowedTop) event.setCancelled(true);
         if (event.isShiftClick()) event.setCancelled(true);
     }
 
     private void handleRewards(InventoryClickEvent event, Player player, Inventory top, int raw) {
-        if (raw == 46) {
-            event.setCancelled(true);
-            gui.saveRewards(top);
-            gui.toggle("rewards.participant-random-item");
-            gui.openRewards(player);
-            return;
-        }
-        if (raw == 52) {
-            event.setCancelled(true);
-            gui.saveRewards(top);
-            gui.toggle("rewards.top-hitter-extra-item");
-            gui.openRewards(player);
-            return;
-        }
-        if (raw == 49) {
-            event.setCancelled(true);
-            gui.saveRewards(top);
-            gui.openMain(player);
-            return;
-        }
+        if (raw == 46) { event.setCancelled(true); gui.saveRewards(top); gui.toggle("rewards.per-hit-random-item"); gui.openRewards(player); return; }
+        if (raw == 52) { event.setCancelled(true); gui.saveRewards(top); gui.toggle("rewards.top-hitter-extra-item"); gui.openRewards(player); return; }
+        if (raw == 49) { event.setCancelled(true); gui.saveRewards(top); gui.openMain(player); return; }
         if (raw >= 45 && raw < top.getSize()) event.setCancelled(true);
         if (event.isShiftClick()) event.setCancelled(true);
     }
 
-    @EventHandler
-    public void onDrag(InventoryDragEvent event) {
+    @EventHandler public void onDrag(InventoryDragEvent event) {
         if (!(event.getView().getTopInventory().getHolder() instanceof AdminGuiService.Holder holder)) return;
         int topSize = event.getView().getTopInventory().getSize();
-        for (int raw : event.getRawSlots()) {
-            if (raw >= topSize) continue;
-            if (holder.menu() == AdminGuiService.Menu.REWARDS && raw < 45) continue;
-            if (holder.menu() == AdminGuiService.Menu.GEAR && (raw == 10 || raw == 11 || raw == 12 || raw == 13 || raw == 15)) continue;
-            event.setCancelled(true);
-            return;
-        }
+        for (int raw : event.getRawSlots()) { if (raw >= topSize) continue; if (holder.menu() == AdminGuiService.Menu.REWARDS && raw < 45) continue; if (holder.menu() == AdminGuiService.Menu.GEAR && (raw == 10 || raw == 11 || raw == 12 || raw == 13 || raw == 15)) continue; event.setCancelled(true); return; }
     }
 
-    @EventHandler
-    public void onClose(InventoryCloseEvent event) {
+    @EventHandler public void onClose(InventoryCloseEvent event) {
         if (!(event.getInventory().getHolder() instanceof AdminGuiService.Holder holder)) return;
         if (holder.menu() == AdminGuiService.Menu.GEAR) gui.saveGear(event.getInventory());
         if (holder.menu() == AdminGuiService.Menu.REWARDS) gui.saveRewards(event.getInventory());
