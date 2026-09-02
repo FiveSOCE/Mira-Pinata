@@ -1,5 +1,6 @@
 boss:
   name: "&6&lMira Pinata"
+  auto-scale-health: true
   hits: 250
   attack-damage: 2.0
   knockback: 10
@@ -34,6 +35,7 @@ messages:
   prefix: "&5[MiraPinata] &r"
   countdown: "&eThe &6Mira Pinata &espawns in &f%seconds% seconds&e!"
   spawned: "&6&l%name% &ahas spawned! Go beat it up!"
+  slayer: "&6%player% &fHas slain %name%&f!"
   defeated: "&a%name% &fhas been defeated!"
   top-hitter: "&6%player% &ewas the top hitter with &f%hits% &ehits!"
   no-spawn: "&cSet the Pinata spawn location first."
@@ -41,7 +43,7 @@ messages:
   stopped: "&cThe Pinata event was stopped."
 
 rewards:
-  participant-random-item: true
+  per-hit-random-item: true
   top-hitter-extra-item: true
   items: []
 
