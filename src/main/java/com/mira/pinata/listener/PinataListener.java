@@ -6,6 +6,7 @@ import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityCombustEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
@@ -40,10 +41,14 @@ public final class PinataListener implements Listener {
         if (manager.isPinata(event.getEntity())) event.setCancelled(true);
     }
 
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
+    public void onCombust(EntityCombustEvent event) {
+        if (manager.isPinata(event.getEntity())) event.setCancelled(true);
+    }
+
     @EventHandler(ignoreCancelled = true)
     public void onTarget(EntityTargetEvent event) {
         if (!manager.isPinata(event.getEntity())) return;
-        // Players are the intended targets. Prevent the event zombie wasting time on other mobs.
         if (event.getTarget() != null && !(event.getTarget() instanceof Player)) event.setCancelled(true);
     }
 
