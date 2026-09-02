@@ -6,9 +6,9 @@ Instead of a passive llama, MiraPinata spawns a configurable Zombie boss that fi
 
 ## Download
 
-**Current release: MiraPinata v0.1.2**
+**Current release: MiraPinata v0.1.3**
 
-- [Download MiraPinata-0.1.2.jar](https://github.com/FiveSOCE/Mira-Pinata/releases/download/v0.1.2/MiraPinata-0.1.2.jar)
+- [Download MiraPinata-0.1.3.jar](https://github.com/FiveSOCE/Mira-Pinata/releases/download/v0.1.3/MiraPinata-0.1.3.jar)
 - [View all releases](https://github.com/FiveSOCE/Mira-Pinata/releases)
 
 ## Requirements
@@ -20,7 +20,7 @@ Instead of a passive llama, MiraPinata spawns a configurable Zombie boss that fi
 
 `/mpinata` opens the GUI control panel. Permission: `mirapinata.admin`.
 
-Normal administration is GUI-first. The control panel handles the fixed spawn, schedule/countdown, Zombie name and gear, attack damage, Knockback, automatic or manual hit health, physical reward pool, top-hitter bonus, every chat message/prefix, and all random-effect settings.
+Normal administration is GUI-first. The control panel handles the fixed spawn, schedule/countdown, Zombie name and gear, attack damage, Knockback, automatic or manual hit health, real-hit charge threshold, exact reward items and drop chances, top-hitter bonus, every chat message/prefix, and all random-effect settings.
 
 All name/message fields support standard legacy `&` colour and formatting codes, including combinations such as `&c&l`.
 
@@ -35,26 +35,38 @@ Automatic health scaling is enabled by default and uses the online player count 
 
 The Boss Settings GUI can disable automatic scaling. Editing Manual Hit Health automatically switches to manual mode so the configured value is authoritative.
 
+## Real combat hits
+
+Melee attacks only count when enough of that player's real attack-speed cooldown has elapsed. The default threshold is 90% and can be edited in Boss Settings.
+
+The calculation uses the player's current attack-speed attribute, so swords, axes, fists and modified attack-speed equipment naturally have different valid hit intervals. Spam clicking may animate on the client but does not reduce Pinata event health and does not roll loot.
+
+Accepted hits are no longer cancelled. MiraPinata lets Minecraft process a tiny real damage event so the Zombie receives normal hurt feedback and combat knockback, then restores its combat body health while the separate event hit counter remains authoritative.
+
 ## Event flow
 
 1. MiraPinata broadcasts the configured countdown warning, 30 seconds by default.
 2. A persistent Zombie spawns at the exact saved location.
 3. The Zombie fights players normally using its configured gear and damage.
 4. Its weapon receives the configured Knockback enchantment, level 10 by default.
-5. Every valid player hit counts as exactly one Pinata hit regardless of weapon damage.
-6. Every successful hit immediately rolls one random item from the configured reward pool for that hitter.
+5. Only accepted real combat hits remove one Pinata event hit.
+6. Each accepted hit independently rolls every configured reward against that reward's own drop percentage.
 7. A boss bar shows remaining event health.
 8. Random effects periodically fire. Current effects are Speed, baby mode, and temporary invisibility. No effect teleports the Pinata.
 9. The Pinata is protected from environmental damage and daylight combustion.
 10. The final hitter is announced with the configurable Slayer message using `%player%` and `%name%`.
-11. The top hitter can receive one additional reward.
+11. The top hitter can receive one additional random pool reward.
 12. A large staggered firework finale celebrates the kill.
 
 ## Rewards
 
 Open the Rewards GUI and place exact ItemStacks in the first five rows. Item metadata, names, enchantments, lore, quantities and custom data are preserved.
 
-When Per-Hit Reward is enabled, each valid hit immediately gives one random configured reward to the hitter. If their inventory is full, the item is dropped naturally at their location. Top Hitter Bonus remains separately configurable.
+Right-click any configured reward to enter an independent drop chance from `0` to `100`. Decimal rare-drop chances are supported, for example `5`, `1`, `0.5`, `0.1` and `0.01` percent.
+
+Each accepted hit independently rolls every reward. A hit may therefore drop nothing, one reward, or multiple rewards depending on the configured percentages. This gives common loot and ultra-rare loot separate controls without forcing one item every hit.
+
+Legacy v0.1.2 reward pools are migrated automatically the first time the Rewards GUI is opened. Their initial independent chances are evenly divided so the old pool averages roughly one successful reward roll per hit before you tune it.
 
 ## Gear
 
