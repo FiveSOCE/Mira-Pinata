@@ -11,6 +11,9 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 
 public final class AdminGuiService {
@@ -19,6 +22,7 @@ public final class AdminGuiService {
         @Override public Inventory getInventory() { return null; }
     }
 
+    private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
     private final MiraPinataPlugin plugin;
     private final PinataManager manager;
     private final Map<UUID, String> pendingChat = new HashMap<>();
@@ -30,11 +34,11 @@ public final class AdminGuiService {
 
     public void openMain(Player player) {
         Inventory inv = base(Menu.MAIN, 27, "&5Mira Pinata Admin");
-        inv.setItem(10, button(Material.ZOMBIE_HEAD, "&dBoss Settings", List.of("&7Name, health, damage and knockback")));
+        inv.setItem(10, button(Material.ZOMBIE_HEAD, "&dBoss Settings", List.of("&7Name, hit health, damage and knockback")));
         inv.setItem(11, button(Material.NETHERITE_CHESTPLATE, "&dGear", List.of("&7Set the Zombie's exact equipment")));
-        inv.setItem(12, button(Material.CHEST, "&dRewards", List.of("&7Configure physical reward items")));
-        inv.setItem(13, button(Material.BLAZE_POWDER, "&dRandom Effects", List.of("&7Speed, baby mode and invisibility")));
-        inv.setItem(14, button(Material.WRITABLE_BOOK, "&dChat Messages", List.of("&7Edit all event broadcasts")));
+        inv.setItem(12, button(Material.CHEST, "&dRewards", List.of("&7Reward pool and distribution settings")));
+        inv.setItem(13, button(Material.BLAZE_POWDER, "&dRandom Effects", List.of("&7Configure every random effect")));
+        inv.setItem(14, button(Material.WRITABLE_BOOK, "&dChat Messages", List.of("&7Edit all Pinata messages")));
         inv.setItem(15, button(Material.CLOCK, "&dSchedule", List.of("&7Automatic event time and countdown")));
         String spawn = manager.configuredSpawn() == null ? "&cNot set" : "&aSet";
         inv.setItem(16, button(Material.COMPASS, "&dSet Spawn Location", List.of("&7Click to use your exact current location", spawn)));
@@ -47,9 +51,9 @@ public final class AdminGuiService {
     public void openBoss(Player player) {
         Inventory inv = base(Menu.BOSS, 27, "&5Pinata Boss Settings");
         inv.setItem(10, button(Material.NAME_TAG, "&dName", List.of("&f" + plugin.getConfig().getString("boss.name"), "&7Click and type a new value in chat")));
-        inv.setItem(12, button(Material.REDSTONE, "&dHit Health", List.of("&f" + plugin.getConfig().getInt("boss.hits") + " hits", "&7Every player hit removes exactly one")));
-        inv.setItem(14, button(Material.IRON_SWORD, "&dAttack Damage", List.of("&f" + plugin.getConfig().getDouble("boss.attack-damage"))));
-        inv.setItem(16, button(Material.PISTON, "&dWeapon Knockback", List.of("&fLevel " + plugin.getConfig().getInt("boss.knockback"))));
+        inv.setItem(12, button(Material.REDSTONE, "&dHit Health", List.of("&f" + plugin.getConfig().getInt("boss.hits") + " hits", "&7Every valid player hit removes exactly one")));
+        inv.setItem(14, button(Material.IRON_SWORD, "&dAttack Damage", List.of("&f" + plugin.getConfig().getDouble("boss.attack-damage"), "&7Click to edit")));
+        inv.setItem(16, button(Material.PISTON, "&dWeapon Knockback", List.of("&fLevel " + plugin.getConfig().getInt("boss.knockback"), "&7Click to edit")));
         inv.setItem(22, back());
         player.openInventory(inv);
     }
@@ -61,11 +65,11 @@ public final class AdminGuiService {
         inv.setItem(12, configItem("gear.leggings"));
         inv.setItem(13, configItem("gear.boots"));
         inv.setItem(15, configItem("gear.weapon"));
-        inv.setItem(18, label(Material.ARMOR_STAND, "&7Helmet", "&7Slot 10"));
-        inv.setItem(19, label(Material.ARMOR_STAND, "&7Chestplate", "&7Slot 11"));
-        inv.setItem(20, label(Material.ARMOR_STAND, "&7Leggings", "&7Slot 12"));
-        inv.setItem(21, label(Material.ARMOR_STAND, "&7Boots", "&7Slot 13"));
-        inv.setItem(23, label(Material.GOLDEN_SWORD, "&7Weapon", "&7Slot 15", "&7Configured knockback is applied on spawn"));
+        inv.setItem(18, label(Material.ARMOR_STAND, "&7Helmet", "&7Place exact item in slot above"));
+        inv.setItem(19, label(Material.ARMOR_STAND, "&7Chestplate", "&7Place exact item in slot above"));
+        inv.setItem(20, label(Material.ARMOR_STAND, "&7Leggings", "&7Place exact item in slot above"));
+        inv.setItem(21, label(Material.ARMOR_STAND, "&7Boots", "&7Place exact item in slot above"));
+        inv.setItem(23, label(Material.GOLDEN_SWORD, "&7Weapon", "&7Place exact item in slot above", "&7Configured Knockback is added on spawn"));
         inv.setItem(26, back());
         player.openInventory(inv);
     }
@@ -86,7 +90,9 @@ public final class AdminGuiService {
         for (Object obj : raw) if (obj instanceof ItemStack stack && slot < 45) inv.setItem(slot++, stack.clone());
         ItemStack filler = filler();
         for (int i = 45; i < 54; i++) inv.setItem(i, filler.clone());
+        inv.setItem(46, toggle(Material.CHEST, "&dParticipant Reward", "rewards.participant-random-item", "&7Each participant gets one random pool item"));
         inv.setItem(49, back());
+        inv.setItem(52, toggle(Material.GOLD_INGOT, "&6Top Hitter Bonus", "rewards.top-hitter-extra-item", "&7Top hitter gets one extra random pool item"));
         player.openInventory(inv);
     }
 
@@ -101,29 +107,40 @@ public final class AdminGuiService {
     }
 
     public void openEffects(Player player) {
-        Inventory inv = base(Menu.EFFECTS, 27, "&5Pinata Random Effects");
-        inv.setItem(10, toggle(Material.SUGAR, "&bSpeed X", "effects.speed.enabled", "&72 second default burst"));
-        inv.setItem(13, toggle(Material.ZOMBIE_HEAD, "&aBaby Mode", "effects.baby.enabled", "&7Temporarily shrinks the Zombie"));
-        inv.setItem(16, toggle(Material.GLASS, "&fInvisibility", "effects.invisibility.enabled", "&7Temporary invisibility"));
-        inv.setItem(20, button(Material.CLOCK, "&dEffect Interval", List.of("&f" + plugin.getConfig().getInt("effects.interval-seconds") + " seconds", "&7Click to edit")));
-        inv.setItem(22, back());
+        Inventory inv = base(Menu.EFFECTS, 36, "&5Pinata Random Effects");
+        inv.setItem(10, toggle(Material.SUGAR, "&bSpeed Burst", "effects.speed.enabled", "&7Click to toggle"));
+        inv.setItem(11, button(Material.FEATHER, "&bSpeed Level", List.of("&fSpeed " + (plugin.getConfig().getInt("effects.speed.amplifier", 9) + 1), "&7Click to edit")));
+        inv.setItem(12, button(Material.CLOCK, "&bSpeed Duration", List.of("&f" + ticksToSeconds("effects.speed.duration-ticks") + " seconds", "&7Click to edit")));
+
+        inv.setItem(14, toggle(Material.ZOMBIE_HEAD, "&aBaby Mode", "effects.baby.enabled", "&7Temporarily shrinks the Zombie"));
+        inv.setItem(15, button(Material.CLOCK, "&aBaby Duration", List.of("&f" + ticksToSeconds("effects.baby.duration-ticks") + " seconds", "&7Click to edit")));
+
+        inv.setItem(19, toggle(Material.GLASS, "&fInvisibility", "effects.invisibility.enabled", "&7Temporary invisibility"));
+        inv.setItem(20, button(Material.CLOCK, "&fInvisible Duration", List.of("&f" + ticksToSeconds("effects.invisibility.duration-ticks") + " seconds", "&7Click to edit")));
+
+        inv.setItem(22, button(Material.REPEATER, "&dRandom Effect Interval", List.of("&f" + plugin.getConfig().getInt("effects.interval-seconds") + " seconds", "&7One random enabled effect each interval")));
+        inv.setItem(31, back());
         player.openInventory(inv);
     }
 
     public void openMessages(Player player) {
-        Inventory inv = base(Menu.MESSAGES, 27, "&5Pinata Messages");
-        inv.setItem(10, messageButton(Material.CLOCK, "Countdown", "messages.countdown"));
+        Inventory inv = base(Menu.MESSAGES, 36, "&5Pinata Messages");
+        inv.setItem(10, messageButton(Material.PAPER, "Prefix", "messages.prefix"));
+        inv.setItem(11, messageButton(Material.CLOCK, "Countdown", "messages.countdown"));
         inv.setItem(12, messageButton(Material.ZOMBIE_HEAD, "Spawned", "messages.spawned"));
-        inv.setItem(14, messageButton(Material.FIREWORK_ROCKET, "Defeated", "messages.defeated"));
-        inv.setItem(16, messageButton(Material.GOLD_INGOT, "Top Hitter", "messages.top-hitter"));
-        inv.setItem(22, back());
+        inv.setItem(13, messageButton(Material.FIREWORK_ROCKET, "Defeated", "messages.defeated"));
+        inv.setItem(14, messageButton(Material.GOLD_INGOT, "Top Hitter", "messages.top-hitter"));
+        inv.setItem(15, messageButton(Material.COMPASS, "Spawn Not Set", "messages.no-spawn"));
+        inv.setItem(16, messageButton(Material.REDSTONE_TORCH, "Already Active", "messages.already-active"));
+        inv.setItem(22, messageButton(Material.BARRIER, "Stopped", "messages.stopped"));
+        inv.setItem(31, back());
         player.openInventory(inv);
     }
 
     public void openSchedule(Player player) {
         Inventory inv = base(Menu.SCHEDULE, 27, "&5Pinata Schedule");
         inv.setItem(11, toggle(Material.DAYLIGHT_DETECTOR, "&dAutomatic Schedule", "schedule.enabled", "&7Run once per configured day/time"));
-        inv.setItem(13, button(Material.CLOCK, "&dDaily Time", List.of("&f" + plugin.getConfig().getString("schedule.time", "20:00"), "&7Click to enter HH:mm")));
+        inv.setItem(13, button(Material.CLOCK, "&dDaily Time", List.of("&f" + plugin.getConfig().getString("schedule.time", "20:00"), "&7Click to enter 24-hour HH:mm")));
         inv.setItem(15, button(Material.REPEATER, "&dCountdown", List.of("&f" + plugin.getConfig().getInt("schedule.countdown-seconds", 30) + " seconds", "&7Click to edit")));
         inv.setItem(22, back());
         player.openInventory(inv);
@@ -146,9 +163,23 @@ public final class AdminGuiService {
     public void applyChat(Player player, String path, String value) {
         try {
             switch (path) {
-                case "boss.name", "messages.countdown", "messages.spawned", "messages.defeated", "messages.top-hitter", "schedule.time" -> plugin.getConfig().set(path, value);
-                case "boss.hits", "boss.knockback", "effects.interval-seconds", "schedule.countdown-seconds" -> plugin.getConfig().set(path, Math.max(1, Integer.parseInt(value)));
+                case "boss.name", "messages.prefix", "messages.countdown", "messages.spawned", "messages.defeated",
+                     "messages.top-hitter", "messages.no-spawn", "messages.already-active", "messages.stopped" -> plugin.getConfig().set(path, value);
+                case "schedule.time" -> {
+                    try {
+                        LocalTime.parse(value, TIME);
+                    } catch (DateTimeParseException ex) {
+                        throw new IllegalArgumentException("Time must be HH:mm");
+                    }
+                    plugin.getConfig().set(path, value);
+                }
+                case "boss.hits", "effects.interval-seconds", "schedule.countdown-seconds" -> plugin.getConfig().set(path, Math.max(1, Integer.parseInt(value)));
+                case "boss.knockback" -> plugin.getConfig().set(path, Math.max(0, Integer.parseInt(value)));
                 case "boss.attack-damage" -> plugin.getConfig().set(path, Math.max(0D, Double.parseDouble(value)));
+                case "effects.speed.level" -> plugin.getConfig().set("effects.speed.amplifier", Math.max(0, Integer.parseInt(value) - 1));
+                case "effects.speed.duration-seconds" -> plugin.getConfig().set("effects.speed.duration-ticks", secondsToTicks(value));
+                case "effects.baby.duration-seconds" -> plugin.getConfig().set("effects.baby.duration-ticks", secondsToTicks(value));
+                case "effects.invisibility.duration-seconds" -> plugin.getConfig().set("effects.invisibility.duration-ticks", secondsToTicks(value));
                 default -> throw new IllegalArgumentException();
             }
             plugin.saveConfig();
@@ -157,6 +188,17 @@ public final class AdminGuiService {
         } catch (RuntimeException ex) {
             plugin.msg(player, "&cInvalid value. Nothing was changed.");
         }
+    }
+
+    private int secondsToTicks(String value) {
+        double seconds = Double.parseDouble(value);
+        if (!Double.isFinite(seconds) || seconds <= 0D) throw new IllegalArgumentException();
+        return Math.max(1, (int) Math.round(seconds * 20D));
+    }
+
+    private String ticksToSeconds(String path) {
+        double seconds = plugin.getConfig().getInt(path, 40) / 20D;
+        return seconds == Math.rint(seconds) ? Integer.toString((int) seconds) : Double.toString(seconds);
     }
 
     private void openForPath(Player player, String path) {
@@ -198,7 +240,7 @@ public final class AdminGuiService {
     }
 
     private ItemStack toggle(Material material, String name, String path, String detail) {
-        return button(material, name, List.of(plugin.getConfig().getBoolean(path) ? "&aEnabled" : "&cDisabled", detail, "&7Click to toggle"));
+        return button(material, name, List.of(plugin.getConfig().getBoolean(path) ? "&aEnabled" : "&cDisabled", detail));
     }
 
     private ItemStack messageButton(Material material, String name, String path) {
