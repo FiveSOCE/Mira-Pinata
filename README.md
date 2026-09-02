@@ -6,9 +6,9 @@ Instead of a passive llama, MiraPinata spawns a configurable Zombie boss that fi
 
 ## Download
 
-**Current release: MiraPinata v0.1.1**
+**Current release: MiraPinata v0.1.2**
 
-- [Download MiraPinata-0.1.1.jar](https://github.com/FiveSOCE/Mira-Pinata/releases/download/v0.1.1/MiraPinata-0.1.1.jar)
+- [Download MiraPinata-0.1.2.jar](https://github.com/FiveSOCE/Mira-Pinata/releases/download/v0.1.2/MiraPinata-0.1.2.jar)
 - [View all releases](https://github.com/FiveSOCE/Mira-Pinata/releases)
 
 ## Requirements
@@ -20,28 +20,20 @@ Instead of a passive llama, MiraPinata spawns a configurable Zombie boss that fi
 
 `/mpinata` opens the GUI control panel. Permission: `mirapinata.admin`.
 
-Normal administration is GUI-first. The control panel handles:
+Normal administration is GUI-first. The control panel handles the fixed spawn, schedule/countdown, Zombie name and gear, attack damage, Knockback, automatic or manual hit health, physical reward pool, top-hitter bonus, every chat message/prefix, and all random-effect settings.
 
-- exact fixed spawn location
-- manual event start/stop
-- automatic daily `HH:mm` schedule
-- countdown duration
-- Zombie name
-- hit-based health
-- attack damage
-- weapon Knockback level
-- exact helmet/chestplate/leggings/boots/weapon ItemStacks
-- physical reward pool
-- participant reward toggle
-- top-hitter bonus toggle
-- every Pinata chat message and prefix
-- random-effect enable/disable states
-- Speed level and duration
-- baby-mode duration
-- invisibility duration
-- random-effect interval
+All name/message fields support standard legacy `&` colour and formatting codes, including combinations such as `&c&l`.
 
-Dead GUI space uses the Mira glowing grey stained-glass style. Text/numeric edits close the GUI, accept the new value through chat, save it, then reopen the relevant GUI.
+## Health scaling
+
+Automatic health scaling is enabled by default and uses the online player count when the Pinata actually spawns:
+
+- 1-5 players: 50 hits
+- 6-10 players: 100 hits
+- 11-15 players: 150 hits
+- every additional 5 players adds another 50 hits
+
+The Boss Settings GUI can disable automatic scaling. Editing Manual Hit Health automatically switches to manual mode so the configured value is authoritative.
 
 ## Event flow
 
@@ -50,18 +42,19 @@ Dead GUI space uses the Mira glowing grey stained-glass style. Text/numeric edit
 3. The Zombie fights players normally using its configured gear and damage.
 4. Its weapon receives the configured Knockback enchantment, level 10 by default.
 5. Every valid player hit counts as exactly one Pinata hit regardless of weapon damage.
-6. A boss bar shows remaining event health.
-7. Random effects periodically fire. Current effects are Speed, baby mode, and temporary invisibility.
-8. MiraPinata contains no teleporting effect.
-9. The Pinata is protected from environmental damage and daylight combustion, so event health is controlled only by valid player hits.
-10. On defeat, participants receive random configured rewards and the top hitter can receive an extra reward.
-11. Top hitter results are broadcast and fireworks celebrate the kill.
+6. Every successful hit immediately rolls one random item from the configured reward pool for that hitter.
+7. A boss bar shows remaining event health.
+8. Random effects periodically fire. Current effects are Speed, baby mode, and temporary invisibility. No effect teleports the Pinata.
+9. The Pinata is protected from environmental damage and daylight combustion.
+10. The final hitter is announced with the configurable Slayer message using `%player%` and `%name%`.
+11. The top hitter can receive one additional reward.
+12. A large staggered firework finale celebrates the kill.
 
 ## Rewards
 
 Open the Rewards GUI and place exact ItemStacks in the first five rows. Item metadata, names, enchantments, lore, quantities and custom data are preserved.
 
-The bottom row controls whether each participant receives one random pool reward and whether the top hitter receives an additional random pool reward.
+When Per-Hit Reward is enabled, each valid hit immediately gives one random configured reward to the hitter. If their inventory is full, the item is dropped naturally at their location. Top Hitter Bonus remains separately configurable.
 
 ## Gear
 
@@ -83,4 +76,5 @@ No effect teleports or relocates the Pinata.
 
 - countdown: `%seconds%`
 - spawned/defeated: `%name%`
+- slayer: `%player%`, `%name%`
 - top hitter: `%player%`, `%hits%`
