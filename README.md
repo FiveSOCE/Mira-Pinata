@@ -6,9 +6,9 @@ Instead of a passive llama, MiraPinata spawns a configurable Zombie boss that fi
 
 ## Download
 
-**Current release: MiraPinata v0.1.0**
+**Current release: MiraPinata v0.1.1**
 
-- [Download MiraPinata-0.1.0.jar](https://github.com/FiveSOCE/Mira-Pinata/releases/download/v0.1.0/MiraPinata-0.1.0.jar)
+- [Download MiraPinata-0.1.1.jar](https://github.com/FiveSOCE/Mira-Pinata/releases/download/v0.1.1/MiraPinata-0.1.1.jar)
 - [View all releases](https://github.com/FiveSOCE/Mira-Pinata/releases)
 
 ## Requirements
@@ -16,15 +16,15 @@ Instead of a passive llama, MiraPinata spawns a configurable Zombie boss that fi
 - Paper 1.21.11
 - Java 21
 
-## Admin
+## Admin GUI
 
 `/mpinata` opens the GUI control panel. Permission: `mirapinata.admin`.
 
-The GUI controls:
+Normal administration is GUI-first. The control panel handles:
 
-- fixed spawn location
+- exact fixed spawn location
 - manual event start/stop
-- automatic daily HH:mm schedule
+- automatic daily `HH:mm` schedule
 - countdown duration
 - Zombie name
 - hit-based health
@@ -32,10 +32,16 @@ The GUI controls:
 - weapon Knockback level
 - exact helmet/chestplate/leggings/boots/weapon ItemStacks
 - physical reward pool
-- event chat messages
-- random effects
+- participant reward toggle
+- top-hitter bonus toggle
+- every Pinata chat message and prefix
+- random-effect enable/disable states
+- Speed level and duration
+- baby-mode duration
+- invisibility duration
+- random-effect interval
 
-Dead GUI space uses the Mira glowing grey stained-glass style.
+Dead GUI space uses the Mira glowing grey stained-glass style. Text/numeric edits close the GUI, accept the new value through chat, save it, then reopen the relevant GUI.
 
 ## Event flow
 
@@ -45,30 +51,33 @@ Dead GUI space uses the Mira glowing grey stained-glass style.
 4. Its weapon receives the configured Knockback enchantment, level 10 by default.
 5. Every valid player hit counts as exactly one Pinata hit regardless of weapon damage.
 6. A boss bar shows remaining event health.
-7. Random effects periodically fire. Current effects are Speed X, baby mode, and temporary invisibility.
+7. Random effects periodically fire. Current effects are Speed, baby mode, and temporary invisibility.
 8. MiraPinata contains no teleporting effect.
-9. On defeat, participants receive random configured rewards and the top hitter can receive an extra reward.
-10. Top hitter results are broadcast and fireworks celebrate the kill.
+9. The Pinata is protected from environmental damage and daylight combustion, so event health is controlled only by valid player hits.
+10. On defeat, participants receive random configured rewards and the top hitter can receive an extra reward.
+11. Top hitter results are broadcast and fireworks celebrate the kill.
 
 ## Rewards
 
 Open the Rewards GUI and place exact ItemStacks in the first five rows. Item metadata, names, enchantments, lore, quantities and custom data are preserved.
 
-By default every participant receives one random reward, and the top hitter receives one additional random reward.
+The bottom row controls whether each participant receives one random pool reward and whether the top hitter receives an additional random pool reward.
 
 ## Gear
 
-The Gear GUI accepts exact ItemStacks for the Zombie's helmet, chestplate, leggings, boots and weapon. The configured Knockback level is applied to the weapon when the Pinata spawns.
+The Gear GUI accepts exact ItemStacks for the Zombie's helmet, chestplate, leggings, boots and weapon. The configured Knockback level is added to the weapon when the Pinata spawns. If no weapon is configured, a Golden Sword is used.
 
 ## Random effects
 
-All random effects are toggled through the GUI:
+All effect settings are GUI controlled:
 
-- Speed X burst
+- Speed burst, default Speed X for 2 seconds
 - temporary baby Zombie mode
 - temporary invisibility
+- effect duration/strength
+- interval between random effects
 
-The interval is GUI editable. No effect teleports or relocates the Pinata.
+No effect teleports or relocates the Pinata.
 
 ## Message placeholders
 
