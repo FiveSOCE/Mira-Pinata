@@ -2,6 +2,7 @@ boss:
   name: "&6&lMira Pinata"
   auto-scale-health: true
   hits: 250
+  minimum-melee-charge: 0.90
   attack-damage: 2.0
   knockback: 10
 
@@ -43,8 +44,11 @@ messages:
   stopped: "&cThe Pinata event was stopped."
 
 rewards:
-  per-hit-random-item: true
+  per-hit-enabled: true
   top-hitter-extra-item: true
+  # GUI-managed reward slots. Each configured reward has its own independent 0-100% drop chance.
+  slots: {}
+  # Legacy v0.1.2 pool, migrated automatically by the GUI if present.
   items: []
 
 gear:
