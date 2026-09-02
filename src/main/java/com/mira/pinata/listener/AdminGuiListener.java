@@ -61,14 +61,16 @@ public final class AdminGuiListener implements Listener {
             case 15 -> gui.openSchedule(player);
             case 16 -> {
                 manager.setSpawn(player.getLocation());
-                plugin.msg(player, "&aPinata spawn set to your current location.");
+                plugin.msg(player, "&aPinata spawn set to your exact current location.");
                 gui.openMain(player);
             }
             case 22 -> {
                 if (manager.active() || manager.countingDown()) {
                     manager.stopEvent(true);
                 } else if (!manager.startCountdown()) {
-                    plugin.msg(player, plugin.getConfig().getString("messages.no-spawn", "&cSet the spawn location first."));
+                    plugin.msg(player, manager.configuredSpawn() == null
+                            ? plugin.getConfig().getString("messages.no-spawn", "&cSet the spawn location first.")
+                            : plugin.getConfig().getString("messages.already-active", "&cA Pinata event is already active."));
                 }
                 player.closeInventory();
             }
@@ -80,7 +82,7 @@ public final class AdminGuiListener implements Listener {
             case 10 -> gui.requestChat(player, "boss.name", "&eType the new Pinata name, including & colour codes if wanted.");
             case 12 -> gui.requestChat(player, "boss.hits", "&eType the required number of player hits.");
             case 14 -> gui.requestChat(player, "boss.attack-damage", "&eType the Zombie's attack damage.");
-            case 16 -> gui.requestChat(player, "boss.knockback", "&eType the weapon Knockback level.");
+            case 16 -> gui.requestChat(player, "boss.knockback", "&eType the weapon Knockback level. 0 disables it.");
             case 22 -> gui.openMain(player);
         }
     }
@@ -88,20 +90,28 @@ public final class AdminGuiListener implements Listener {
     private void handleEffects(Player player, int slot) {
         switch (slot) {
             case 10 -> { gui.toggle("effects.speed.enabled"); gui.openEffects(player); }
-            case 13 -> { gui.toggle("effects.baby.enabled"); gui.openEffects(player); }
-            case 16 -> { gui.toggle("effects.invisibility.enabled"); gui.openEffects(player); }
-            case 20 -> gui.requestChat(player, "effects.interval-seconds", "&eType the number of seconds between random effects.");
-            case 22 -> gui.openMain(player);
+            case 11 -> gui.requestChat(player, "effects.speed.level", "&eType the Speed level, for example 10.");
+            case 12 -> gui.requestChat(player, "effects.speed.duration-seconds", "&eType the Speed duration in seconds.");
+            case 14 -> { gui.toggle("effects.baby.enabled"); gui.openEffects(player); }
+            case 15 -> gui.requestChat(player, "effects.baby.duration-seconds", "&eType the baby-mode duration in seconds.");
+            case 19 -> { gui.toggle("effects.invisibility.enabled"); gui.openEffects(player); }
+            case 20 -> gui.requestChat(player, "effects.invisibility.duration-seconds", "&eType the invisibility duration in seconds.");
+            case 22 -> gui.requestChat(player, "effects.interval-seconds", "&eType the number of seconds between random effects.");
+            case 31 -> gui.openMain(player);
         }
     }
 
     private void handleMessages(Player player, int slot) {
         switch (slot) {
-            case 10 -> gui.requestChat(player, "messages.countdown", "&eType the countdown message. Use %seconds%.");
+            case 10 -> gui.requestChat(player, "messages.prefix", "&eType the message prefix.");
+            case 11 -> gui.requestChat(player, "messages.countdown", "&eType the countdown message. Use %seconds%.");
             case 12 -> gui.requestChat(player, "messages.spawned", "&eType the spawn message. Use %name%.");
-            case 14 -> gui.requestChat(player, "messages.defeated", "&eType the defeated message. Use %name%.");
-            case 16 -> gui.requestChat(player, "messages.top-hitter", "&eType the top-hitter message. Use %player% and %hits%.");
-            case 22 -> gui.openMain(player);
+            case 13 -> gui.requestChat(player, "messages.defeated", "&eType the defeated message. Use %name%.");
+            case 14 -> gui.requestChat(player, "messages.top-hitter", "&eType the top-hitter message. Use %player% and %hits%.");
+            case 15 -> gui.requestChat(player, "messages.no-spawn", "&eType the spawn-not-set message.");
+            case 16 -> gui.requestChat(player, "messages.already-active", "&eType the already-active message.");
+            case 22 -> gui.requestChat(player, "messages.stopped", "&eType the stopped-event message.");
+            case 31 -> gui.openMain(player);
         }
     }
 
@@ -127,6 +137,20 @@ public final class AdminGuiListener implements Listener {
     }
 
     private void handleRewards(InventoryClickEvent event, Player player, Inventory top, int raw) {
+        if (raw == 46) {
+            event.setCancelled(true);
+            gui.saveRewards(top);
+            gui.toggle("rewards.participant-random-item");
+            gui.openRewards(player);
+            return;
+        }
+        if (raw == 52) {
+            event.setCancelled(true);
+            gui.saveRewards(top);
+            gui.toggle("rewards.top-hitter-extra-item");
+            gui.openRewards(player);
+            return;
+        }
         if (raw == 49) {
             event.setCancelled(true);
             gui.saveRewards(top);
