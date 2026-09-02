@@ -16,23 +16,35 @@ import org.bukkit.projectiles.ProjectileSource;
 public final class PinataListener implements Listener {
     private final PinataManager manager;
 
-    public PinataListener(PinataManager manager) {
-        this.manager = manager;
-    }
+    public PinataListener(PinataManager manager) { this.manager = manager; }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onHit(EntityDamageByEntityEvent event) {
         if (!manager.isPinata(event.getEntity())) return;
-        event.setCancelled(true);
 
         Player player = null;
         if (event.getDamager() instanceof Player direct) {
+            if (!manager.acceptRealMeleeHit(direct)) {
+                event.setCancelled(true);
+                return;
+            }
             player = direct;
         } else if (event.getDamager() instanceof Projectile projectile) {
             ProjectileSource shooter = projectile.getShooter();
             if (shooter instanceof Player ranged) player = ranged;
         }
-        if (player != null) manager.registerHit(player);
+
+        if (player == null) {
+            event.setCancelled(true);
+            return;
+        }
+
+        // Let Minecraft process a genuine damage event so Fred receives the normal hurt
+        // animation and combat knockback. Event-health is still controlled by MiraPinata.
+        event.setCancelled(false);
+        event.setDamage(0.01D);
+        manager.registerHit(player);
+        manager.restoreCombatBodyNextTick();
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
@@ -53,7 +65,5 @@ public final class PinataListener implements Listener {
     }
 
     @EventHandler
-    public void onJoin(PlayerJoinEvent event) {
-        manager.addBossBarPlayer(event.getPlayer());
-    }
+    public void onJoin(PlayerJoinEvent event) { manager.addBossBarPlayer(event.getPlayer()); }
 }
