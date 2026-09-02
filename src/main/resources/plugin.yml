@@ -1,0 +1,14 @@
+name: MiraPinata
+version: 0.1.0
+main: com.mira.pinata.MiraPinataPlugin
+api-version: '1.21'
+authors: [FiveS]
+description: GUI-driven fighting pinata boss event for the Mira plugin suite.
+commands:
+  mpinata:
+    description: Open the MiraPinata administrator GUI.
+    usage: /mpinata
+    permission: mirapinata.admin
+permissions:
+  mirapinata.admin:
+    default: op

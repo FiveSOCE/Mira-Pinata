@@ -1,0 +1,53 @@
+boss:
+  name: "&6&lMira Pinata"
+  hits: 250
+  attack-damage: 2.0
+  knockback: 10
+
+spawn:
+  world: ""
+  x: 0.0
+  y: 0.0
+  z: 0.0
+  yaw: 0.0
+  pitch: 0.0
+
+schedule:
+  enabled: false
+  time: "20:00"
+  countdown-seconds: 30
+
+effects:
+  interval-seconds: 10
+  speed:
+    enabled: true
+    duration-ticks: 40
+    amplifier: 9
+  baby:
+    enabled: true
+    duration-ticks: 60
+  invisibility:
+    enabled: true
+    duration-ticks: 40
+
+messages:
+  prefix: "&5[MiraPinata] &r"
+  countdown: "&eThe &6Mira Pinata &espawns in &f%seconds% seconds&e!"
+  spawned: "&6&l%name% &ahas spawned! Go beat it up!"
+  defeated: "&a%name% &fhas been defeated!"
+  top-hitter: "&6%player% &ewas the top hitter with &f%hits% &ehits!"
+  no-spawn: "&cSet the Pinata spawn location first."
+  already-active: "&cA Pinata event is already active or counting down."
+  stopped: "&cThe Pinata event was stopped."
+
+rewards:
+  participant-random-item: true
+  top-hitter-extra-item: true
+  items: []
+
+gear:
+  helmet: null
+  chestplate: null
+  leggings: null
+  boots: null
+  weapon: null
