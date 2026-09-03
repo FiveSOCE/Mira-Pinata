@@ -1,5 +1,11 @@
 boss:
   name: "&6&lMira Pinata"
+  named-variants:
+    - "&6&lMira Pinata"
+    - "&d&lCandy Crusher"
+    - "&c&lThe Sugar Fiend"
+    - "&e&lGolden Gobbler"
+    - "&5&lParty Wrecker"
   auto-scale-health: true
   hits: 250
   minimum-melee-charge: 0.90
@@ -46,9 +52,7 @@ messages:
 rewards:
   per-hit-enabled: true
   top-hitter-extra-item: true
-  # GUI-managed reward slots. Each configured reward has its own independent 0-100% drop chance.
   slots: {}
-  # Legacy v0.1.2 pool, migrated automatically by the GUI if present.
   items: []
 
 gear:
