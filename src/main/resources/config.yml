@@ -39,7 +39,7 @@ effects:
     duration-ticks: 40
 
 messages:
-  prefix: "&5[MiraPinata] &r"
+  prefix: "&5&lMira &8>> &r"
   countdown: "&eThe &6Mira Pinata &espawns in &f%seconds% seconds&e!"
   spawned: "&6&l%name% &ahas spawned! Go beat it up!"
   slayer: "&6%player% &fHas slain %name%&f!"
