@@ -19,6 +19,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public final class MiraPinataPlugin extends JavaPlugin {
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacyAmpersand();
+    private static final String CHAT_PREFIX = "&5&lMira &8>> &r";
 
     private MiraCore core;
     private PinataManager manager;
@@ -68,10 +69,10 @@ public final class MiraPinataPlugin extends JavaPlugin {
     }
 
     public void msg(CommandSender sender, String text) {
-        sender.sendMessage(component(getConfig().getString("messages.prefix", "&5[MiraPinata] &r") + text));
+        sender.sendMessage(component(CHAT_PREFIX + text));
     }
 
     public void broadcast(String text) {
-        Bukkit.broadcast(component(getConfig().getString("messages.prefix", "&5[MiraPinata] &r") + text));
+        Bukkit.broadcast(component(CHAT_PREFIX + text));
     }
 }
