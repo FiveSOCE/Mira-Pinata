@@ -36,6 +36,7 @@ public final class PinataManager {
     private BukkitTask effectTask;
     private BukkitTask scheduleTask;
     private String lastScheduledRun = "";
+    private String currentBossName = "&6&lMira Pinata";
 
     public PinataManager(MiraPinataPlugin plugin) { this.plugin = plugin; }
 
@@ -102,13 +103,11 @@ public final class PinataManager {
         if (active()) return;
         Location location = configuredSpawn();
         if (location == null) return;
-
-        maxHits = plugin.getConfig().getBoolean("boss.auto-scale-health", true)
-                ? scaledHitsForCurrentPlayers()
-                : Math.max(1, plugin.getConfig().getInt("boss.hits", 250));
+        maxHits = plugin.getConfig().getBoolean("boss.auto-scale-health", true) ? scaledHitsForCurrentPlayers() : Math.max(1, plugin.getConfig().getInt("boss.hits", 250));
         remainingHits = maxHits;
         hits.clear();
         lastAcceptedMelee.clear();
+        currentBossName = chooseBossName();
 
         pinata = location.getWorld().spawn(location, Zombie.class, zombie -> {
             zombie.setPersistent(true);
@@ -116,7 +115,7 @@ public final class PinataManager {
             zombie.setCanPickupItems(false);
             zombie.setAdult();
             zombie.setMaximumNoDamageTicks(0);
-            zombie.setCustomName(plugin.colour(plugin.getConfig().getString("boss.name", "&6&lMira Pinata")));
+            zombie.setCustomName(plugin.colour(currentBossName));
             zombie.setCustomNameVisible(true);
             AttributeInstance maxHealth = zombie.getAttribute(Attribute.MAX_HEALTH);
             if (maxHealth != null) maxHealth.setBaseValue(100.0D);
@@ -130,10 +129,14 @@ public final class PinataManager {
         bossBar = Bukkit.createBossBar(cleanName + " - " + maxHits + " hits", BarColor.PURPLE, BarStyle.SEGMENTED_10);
         bossBar.setProgress(1.0);
         Bukkit.getOnlinePlayers().forEach(bossBar::addPlayer);
-
-        String configuredName = plugin.getConfig().getString("boss.name", "&6&lMira Pinata");
-        plugin.broadcast(plugin.getConfig().getString("messages.spawned", "&6&l%name% &ahas spawned!").replace("%name%", configuredName));
+        plugin.broadcast(plugin.getConfig().getString("messages.spawned", "&6&l%name% &ahas spawned!").replace("%name%", currentBossName));
         startRandomEffects();
+    }
+
+    private String chooseBossName() {
+        List<String> variants = plugin.getConfig().getStringList("boss.named-variants");
+        if (variants.isEmpty()) return plugin.getConfig().getString("boss.name", "&6&lMira Pinata");
+        return variants.get(ThreadLocalRandom.current().nextInt(variants.size()));
     }
 
     private void applyGear(Zombie zombie) {
@@ -158,7 +161,6 @@ public final class PinataManager {
         remainingHits = Math.max(0, remainingHits - 1);
         hits.merge(player.getUniqueId(), 1, Integer::sum);
         rollPerHitLoot(player);
-
         if (bossBar != null) {
             bossBar.setProgress(Math.max(0.0, Math.min(1.0, remainingHits / (double) maxHits)));
             String cleanName = ChatColor.stripColor(pinata.getCustomName() == null ? "Mira Pinata" : pinata.getCustomName());
@@ -215,7 +217,7 @@ public final class PinataManager {
 
     private void finishEvent(UUID slayerUuid) {
         if (!active()) return;
-        String bossName = plugin.getConfig().getString("boss.name", "&6&lMira Pinata");
+        String bossName = currentBossName;
         Location death = pinata.getLocation().clone();
         pinata.remove(); pinata = null; stopRuntimeTasks();
         Player slayer = Bukkit.getPlayer(slayerUuid);
@@ -223,11 +225,16 @@ public final class PinataManager {
         plugin.broadcast(plugin.getConfig().getString("messages.slayer", "&6%player% &fHas slain %name%&f!").replace("%player%", slayerName).replace("%name%", bossName));
         plugin.broadcast(plugin.getConfig().getString("messages.defeated", "&a%name% &fhas been defeated!").replace("%name%", bossName));
         Map.Entry<UUID, Integer> top = hits.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+        UUID topId = null; String topName = "None"; int topHits = 0;
         if (top != null) {
-            String playerName = Optional.ofNullable(Bukkit.getOfflinePlayer(top.getKey()).getName()).orElse("Unknown");
-            plugin.broadcast(plugin.getConfig().getString("messages.top-hitter", "&6%player% &ewas the top hitter with &f%hits% &ehits!").replace("%player%", playerName).replace("%hits%", Integer.toString(top.getValue())));
-            rewardTopHitter(top.getKey());
+            topId = top.getKey(); topHits = top.getValue();
+            topName = Optional.ofNullable(Bukkit.getOfflinePlayer(topId).getName()).orElse("Unknown");
+            plugin.broadcast(plugin.getConfig().getString("messages.top-hitter", "&6%player% &ewas the top hitter with &f%hits% &ehits!").replace("%player%", topName).replace("%hits%", Integer.toString(topHits)));
+            rewardTopHitter(topId);
         }
+        plugin.stats().record(ChatColor.stripColor(plugin.colour(bossName)), slayerUuid, slayerName, topId, topName, topHits);
+        plugin.core().milestones().award(slayerUuid, "mirapinata.slayer", "MiraPinata", Map.of("boss", ChatColor.stripColor(plugin.colour(bossName))));
+        if (topId != null) plugin.core().milestones().award(topId, "mirapinata.top_hitter", "MiraPinata", Map.of("hits", Integer.toString(topHits)));
         fireworks(death);
         hits.clear(); lastAcceptedMelee.clear();
     }
@@ -287,6 +294,5 @@ public final class PinataManager {
     }
 
     private ItemStack getItem(String path) { Object value = plugin.getConfig().get(path); return value instanceof ItemStack stack ? stack.clone() : null; }
-
     public record RewardEntry(int slot, ItemStack item, double chance) { }
 }
