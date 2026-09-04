@@ -5,6 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,5 +25,17 @@ jobs:
       - name: Upload plugin jar
         uses: actions/upload-artifact@v4
         with:
-          name: MiraPinata-0.1.0
-          path: build/libs/MiraPinata-0.1.0.jar
+          name: MiraPinata-0.1.4
+          path: build/libs/MiraPinata-0.1.4.jar
+
+      - name: Publish v0.1.4 release if missing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view v0.1.4 >/dev/null 2>&1; then
+            gh release create v0.1.4 \
+              build/libs/MiraPinata-0.1.4.jar \
+              --target "${{ github.sha }}" \
+              --title "MiraPinata v0.1.4" \
+              --notes "Adds named Pinata boss variants, MiraCore milestone awards, persistent event statistics, PlaceholderAPI/MiraNPC display integration and standard Mira suite metadata."
+          fi
