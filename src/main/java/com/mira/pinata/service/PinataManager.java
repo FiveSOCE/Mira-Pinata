@@ -1,6 +1,7 @@
 package com.mira.pinata.service;
 
 import com.mira.pinata.MiraPinataPlugin;
+import com.mira.pinata.util.CosmeticsBridge;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -30,6 +31,7 @@ public final class PinataManager {
     private BossBar bossBar;
     private int maxHits;
     private int remainingHits;
+    private boolean lowHealthVisualPlayed;
     private final Map<UUID, Integer> hits = new HashMap<>();
     private final Map<UUID, Long> lastAcceptedMelee = new HashMap<>();
     private BukkitTask countdownTask;
@@ -105,6 +107,7 @@ public final class PinataManager {
         if (location == null) return;
         maxHits = plugin.getConfig().getBoolean("boss.auto-scale-health", true) ? scaledHitsForCurrentPlayers() : Math.max(1, plugin.getConfig().getInt("boss.hits", 250));
         remainingHits = maxHits;
+        lowHealthVisualPlayed = false;
         hits.clear();
         lastAcceptedMelee.clear();
         currentBossName = chooseBossName();
@@ -130,6 +133,7 @@ public final class PinataManager {
         bossBar.setProgress(1.0);
         Bukkit.getOnlinePlayers().forEach(bossBar::addPlayer);
         plugin.broadcast(plugin.getConfig().getString("messages.spawned", "&6&l%name% &ahas spawned!").replace("%name%", currentBossName));
+        CosmeticsBridge.playNearby(pinata.getLocation(), "pinata_spawn", 64.0D);
         startRandomEffects();
     }
 
@@ -166,8 +170,11 @@ public final class PinataManager {
             String cleanName = ChatColor.stripColor(pinata.getCustomName() == null ? "Mira Pinata" : pinata.getCustomName());
             bossBar.setTitle(cleanName + " - " + remainingHits + "/" + maxHits + " hits");
         }
-        pinata.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, pinata.getLocation().add(0, 1, 0), 6, 0.25, 0.35, 0.25, 0.02);
-        pinata.getWorld().playSound(pinata.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.45f, 1.45f);
+        CosmeticsBridge.playNearby(pinata.getLocation(), "pinata_hit", 32.0D);
+        if (!lowHealthVisualPlayed && remainingHits > 0 && remainingHits <= Math.max(1, maxHits / 4)) {
+            lowHealthVisualPlayed = true;
+            CosmeticsBridge.playNearby(pinata.getLocation(), "pinata_low_health", 48.0D);
+        }
         if (remainingHits <= 0) finishEvent(player.getUniqueId());
     }
 
@@ -235,7 +242,7 @@ public final class PinataManager {
         plugin.stats().record(ChatColor.stripColor(plugin.colour(bossName)), slayerUuid, slayerName, topId, topName, topHits);
         plugin.core().milestones().award(slayerUuid, "mirapinata.slayer", "MiraPinata", Map.of("boss", ChatColor.stripColor(plugin.colour(bossName))));
         if (topId != null) plugin.core().milestones().award(topId, "mirapinata.top_hitter", "MiraPinata", Map.of("hits", Integer.toString(topHits)));
-        fireworks(death);
+        CosmeticsBridge.playNearby(death, "pinata_death", 64.0D);
         hits.clear(); lastAcceptedMelee.clear();
     }
 
