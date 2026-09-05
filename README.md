@@ -4,7 +4,7 @@ MiraPinata is a GUI-driven server boss event for the Mira Paper server suite. It
 
 ## Download
 
-[**Download MiraPinata v0.1.4**](https://github.com/FiveSOCE/Mira-Pinata/releases/download/v0.1.4/MiraPinata-0.1.4.jar)
+[**Download MiraPinata v0.1.5**](https://github.com/FiveSOCE/Mira-Pinata/releases/download/v0.1.5/MiraPinata-0.1.5.jar)
 
 ## Requirements / Dependencies
 
@@ -35,3 +35,8 @@ Current source also tracks event statistics/leaderboard data and supports Placeh
 | Permission | Default | What it does |
 | --- | --- | --- |
 | `mirapinata.admin` | OP | Allows access to the MiraPinata administrator GUI and event-management controls. |
+
+
+## MiraCosmetics Integration (0.1.5)
+
+Moves Pinata spawn, hit, low-health and defeat presentation into MiraCosmetics, removing the old hard-coded hit particle/sound presentation.
