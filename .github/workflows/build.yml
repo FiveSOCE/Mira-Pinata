@@ -25,17 +25,17 @@ jobs:
       - name: Upload plugin jar
         uses: actions/upload-artifact@v4
         with:
-          name: MiraPinata-0.1.4
-          path: build/libs/MiraPinata-0.1.4.jar
+          name: MiraPinata-0.1.5
+          path: build/libs/MiraPinata-0.1.5.jar
 
-      - name: Publish v0.1.4 release if missing
+      - name: Publish v0.1.5 release if missing
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view v0.1.4 >/dev/null 2>&1; then
-            gh release create v0.1.4 \
-              build/libs/MiraPinata-0.1.4.jar \
+          if ! gh release view v0.1.5 >/dev/null 2>&1; then
+            gh release create v0.1.5 \
+              build/libs/MiraPinata-0.1.5.jar \
               --target "${{ github.sha }}" \
-              --title "MiraPinata v0.1.4" \
-              --notes "Adds named Pinata boss variants, MiraCore milestone awards, persistent event statistics, PlaceholderAPI/MiraNPC display integration and standard Mira suite metadata."
+              --title "MiraPinata v0.1.5" \
+              --notes "Moves Pinata spawn, hit, low-health and defeat presentation into MiraCosmetics, removing the old hard-coded hit particle/sound presentation."
           fi
