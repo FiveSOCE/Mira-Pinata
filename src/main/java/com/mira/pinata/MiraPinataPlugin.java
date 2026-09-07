@@ -59,6 +59,7 @@ public final class MiraPinataPlugin extends JavaPlugin {
 
     public MiraCore core() { return core; }
     public PinataStatsService stats() { return stats; }
+    public PinataManager manager() { return manager; }
 
     public Component component(String text) {
         return LEGACY.deserialize(text == null ? "" : text).decoration(TextDecoration.ITALIC, false);
