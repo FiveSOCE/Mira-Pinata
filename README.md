@@ -4,7 +4,7 @@ MiraPinata is a GUI-driven server boss event for the Mira Paper server suite. It
 
 ## Download
 
-[**Download MiraPinata v0.1.5**](https://github.com/FiveSOCE/Mira-Pinata/releases/download/v0.1.5/MiraPinata-0.1.5.jar)
+[**Download MiraPinata v0.1.6**](https://github.com/FiveSOCE/Mira-Pinata/releases/download/v0.1.6/MiraPinata-0.1.6.jar)
 
 ## Requirements / Dependencies
 
@@ -23,6 +23,11 @@ When the event starts, MiraPinata broadcasts the configured countdown and spawns
 Each accepted hit removes one event hit and independently rolls every configured reward against that reward's own percentage, allowing a hit to drop zero, one or multiple rewards. Exact ItemStack metadata is preserved. A boss bar tracks remaining event health, random effects such as Speed, baby mode and invisibility can fire during the fight, and the Zombie remains protected from environmental damage/daylight. The final hitter and top hitter can be announced/rewarded, followed by a staggered firework finale.
 
 Current source also tracks event statistics/leaderboard data and supports PlaceholderAPI/MiraNPC display integrations. Common message placeholders include `%seconds%`, `%name%`, `%player%` and `%hits%`.
+
+
+## Mira event/voucher integration (0.1.6)
+
+MiraPinata exposes its live `PinataManager` through the plugin entrypoint for first-party integrations. MiraItems can safely reject a Pinata Call voucher while the event is already active/counting down, while MiraEvents can start a Mega Pinata through the normal manager lifecycle.
 
 ## Commands
 
