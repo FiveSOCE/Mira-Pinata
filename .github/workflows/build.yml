@@ -29,6 +29,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view v0.1.6 >/dev/null 2>&1; then
+          if gh release view v0.1.6 >/dev/null 2>&1; then
+            gh release upload v0.1.6 build/libs/MiraPinata-0.1.6.jar --clobber
+          else
             gh release create v0.1.6 build/libs/MiraPinata-0.1.6.jar --target "${{ github.sha }}" --title "MiraPinata v0.1.6" --notes "Exposes guarded Pinata event state/start integration for MiraItems vouchers and MiraEvents."
           fi
