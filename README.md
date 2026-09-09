@@ -4,7 +4,7 @@ MiraPinata is a GUI-driven server boss event for the Mira Paper server suite. It
 
 ## Download
 
-[**Download MiraPinata v0.1.6**](https://github.com/FiveSOCE/Mira-Pinata/releases/download/v0.1.6/MiraPinata-0.1.6.jar)
+[**Download MiraPinata v0.1.6**](https://github.com/FiveSOCE/Mira-Pinata/releases/download/v0.1.7/MiraPinata-0.1.7.jar)
 
 ## Requirements / Dependencies
 
