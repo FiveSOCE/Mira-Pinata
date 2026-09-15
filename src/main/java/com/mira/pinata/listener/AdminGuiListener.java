@@ -84,6 +84,7 @@ public final class AdminGuiListener implements Listener {
             case 15 -> gui.requestChat(player, "messages.no-spawn", "&eType the spawn-not-set message. & codes are supported.");
             case 16 -> gui.requestChat(player, "messages.already-active", "&eType the already-active message. & codes are supported.");
             case 19 -> gui.requestChat(player, "messages.slayer", "&eType the slayer message. Use %player% and %name%. & codes are supported.");
+            case 20 -> gui.requestChat(player, "messages.empty-pockets", "&eType the empty-pockets message. Use %name%. & codes are supported.");
             case 22 -> gui.requestChat(player, "messages.stopped", "&eType the stopped-event message. & codes are supported.");
             case 31 -> gui.openMain(player);
         }
@@ -115,6 +116,7 @@ public final class AdminGuiListener implements Listener {
             return;
         }
         if (raw == 46) { event.setCancelled(true); gui.saveRewards(top); gui.toggle("rewards.per-hit-enabled"); gui.openRewards(player); return; }
+        if (raw == 47) { event.setCancelled(true); gui.saveRewards(top); gui.requestChat(player, "rewards.hit-reward-chance", "&eType the chance from 0 to 100 that an accepted hit awards one reward. Default is 70%."); return; }
         if (raw == 52) { event.setCancelled(true); gui.saveRewards(top); gui.toggle("rewards.top-hitter-extra-item"); gui.openRewards(player); return; }
         if (raw == 49) { event.setCancelled(true); gui.saveRewards(top); gui.openMain(player); return; }
         if (raw >= 45 && raw < top.getSize()) event.setCancelled(true);
