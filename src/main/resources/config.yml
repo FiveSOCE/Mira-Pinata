@@ -45,12 +45,14 @@ messages:
   slayer: "&6%player% &fHas slain %name%&f!"
   defeated: "&a%name% &fhas been defeated!"
   top-hitter: "&6%player% &ewas the top hitter with &f%hits% &ehits!"
+  empty-pockets: "&e%name%'s Pockets are empty!"
   no-spawn: "&cSet the Pinata spawn location first."
   already-active: "&cA Pinata event is already active or counting down."
   stopped: "&cThe Pinata event was stopped."
 
 rewards:
   per-hit-enabled: true
+  hit-reward-chance: 70.0
   top-hitter-extra-item: true
   slots: {}
   items: []
