@@ -31,7 +31,7 @@ public final class AdminGuiService {
         Inventory inv = base(Menu.MAIN, 27, "&5Mira Pinata Admin");
         inv.setItem(10, button(Material.ZOMBIE_HEAD, "&dBoss Settings", List.of("&7Name, health scaling, real-hit rules, damage and knockback")));
         inv.setItem(11, button(Material.NETHERITE_CHESTPLATE, "&dGear", List.of("&7Set the Zombie's exact equipment")));
-        inv.setItem(12, button(Material.CHEST, "&dRewards", List.of("&7Exact loot items and independent drop chances")));
+        inv.setItem(12, button(Material.CHEST, "&dRewards", List.of("&7One weighted reward per successful reward hit")));
         inv.setItem(13, button(Material.BLAZE_POWDER, "&dRandom Effects", List.of("&7Configure every random effect")));
         inv.setItem(14, button(Material.WRITABLE_BOOK, "&dChat Messages", List.of("&7Edit all Pinata messages with & colour codes")));
         inv.setItem(15, button(Material.CLOCK, "&dSchedule", List.of("&7Automatic event time and countdown")));
@@ -70,10 +70,12 @@ public final class AdminGuiService {
             if (raw instanceof ItemStack stack && !stack.getType().isAir()) inv.setItem(slot, stack.clone());
         }
         ItemStack filler = filler(); for (int i = 45; i < 54; i++) inv.setItem(i, filler.clone());
-        inv.setItem(45, button(Material.BOOK, "&eReward Chances", List.of("&7Right-click any reward item", "&7to set its independent drop chance.", "&7Supports decimals: 1, 0.5, 0.01 etc.")));
-        inv.setItem(46, toggle(Material.CHEST, "&dPer-Hit Loot Rolls", "rewards.per-hit-enabled", "&7Every accepted combat hit independently rolls every reward"));
+        inv.setItem(45, button(Material.BOOK, "&eReward Weights", List.of("&7Right-click any reward item", "&7to set its relative selection weight.", "&7Exactly one item is selected on a successful roll.")));
+        inv.setItem(46, toggle(Material.CHEST, "&dPer-Hit Loot Rolls", "rewards.per-hit-enabled", "&7Each accepted hit can award at most one reward"));
+        double hitChance = plugin.getConfig().getDouble("rewards.hit-reward-chance", 70.0D);
+        inv.setItem(47, button(Material.EMERALD, "&aReward Hit Chance", List.of("&f" + trim(hitChance) + "%", "&7Chance an accepted hit awards one reward", "&7Failed rolls use the empty-pockets message")));
         inv.setItem(49, back());
-        inv.setItem(52, toggle(Material.GOLD_INGOT, "&6Top Hitter Bonus", "rewards.top-hitter-extra-item", "&7Top hitter gets one extra random pool item"));
+        inv.setItem(52, toggle(Material.GOLD_INGOT, "&6Top Hitter Bonus", "rewards.top-hitter-extra-item", "&7Top hitter gets one extra weighted pool item"));
         player.openInventory(inv);
     }
 
@@ -97,7 +99,7 @@ public final class AdminGuiService {
         if (item == null || item.getType().isAir()) return;
         saveRewards(inv);
         double current = plugin.getConfig().getDouble("rewards.slots." + slot + ".chance", 100.0D);
-        requestChat(player, "rewards.chance." + slot, "&eType the drop chance from 0 to 100 for this reward. Current: &f" + trim(current) + "%&e.");
+        requestChat(player, "rewards.chance." + slot, "&eType the selection weight from 0 to 100 for this reward. Current: &f" + trim(current) + "&e. Higher values are selected more often.");
     }
 
     private void migrateLegacyRewards() {
@@ -124,7 +126,7 @@ public final class AdminGuiService {
 
     public void openMessages(Player player) {
         Inventory inv = base(Menu.MESSAGES, 36, "&5Pinata Messages");
-        inv.setItem(10, messageButton(Material.PAPER, "Prefix", "messages.prefix")); inv.setItem(11, messageButton(Material.CLOCK, "Countdown", "messages.countdown")); inv.setItem(12, messageButton(Material.ZOMBIE_HEAD, "Spawned", "messages.spawned")); inv.setItem(13, messageButton(Material.FIREWORK_ROCKET, "Defeated", "messages.defeated")); inv.setItem(14, messageButton(Material.GOLD_INGOT, "Top Hitter", "messages.top-hitter")); inv.setItem(15, messageButton(Material.COMPASS, "Spawn Not Set", "messages.no-spawn")); inv.setItem(16, messageButton(Material.REDSTONE_TORCH, "Already Active", "messages.already-active")); inv.setItem(19, messageButton(Material.NETHERITE_SWORD, "Slayer", "messages.slayer")); inv.setItem(22, messageButton(Material.BARRIER, "Stopped", "messages.stopped")); inv.setItem(31, back()); player.openInventory(inv);
+        inv.setItem(10, messageButton(Material.PAPER, "Prefix", "messages.prefix")); inv.setItem(11, messageButton(Material.CLOCK, "Countdown", "messages.countdown")); inv.setItem(12, messageButton(Material.ZOMBIE_HEAD, "Spawned", "messages.spawned")); inv.setItem(13, messageButton(Material.FIREWORK_ROCKET, "Defeated", "messages.defeated")); inv.setItem(14, messageButton(Material.GOLD_INGOT, "Top Hitter", "messages.top-hitter")); inv.setItem(15, messageButton(Material.COMPASS, "Spawn Not Set", "messages.no-spawn")); inv.setItem(16, messageButton(Material.REDSTONE_TORCH, "Already Active", "messages.already-active")); inv.setItem(19, messageButton(Material.NETHERITE_SWORD, "Slayer", "messages.slayer")); inv.setItem(20, messageButton(Material.PAPER, "Empty Pockets", "messages.empty-pockets")); inv.setItem(22, messageButton(Material.BARRIER, "Stopped", "messages.stopped")); inv.setItem(31, back()); player.openInventory(inv);
     }
 
     public void openSchedule(Player player) { Inventory inv=base(Menu.SCHEDULE,27,"&5Pinata Schedule"); inv.setItem(11,toggle(Material.DAYLIGHT_DETECTOR,"&dAutomatic Schedule","schedule.enabled","&7Run once per configured day/time")); inv.setItem(13,button(Material.CLOCK,"&dDaily Time",List.of("&f"+plugin.getConfig().getString("schedule.time","20:00"),"&7Click to enter 24-hour HH:mm"))); inv.setItem(15,button(Material.REPEATER,"&dCountdown",List.of("&f"+plugin.getConfig().getInt("schedule.countdown-seconds",30)+" seconds","&7Click to edit"))); inv.setItem(22,back()); player.openInventory(inv); }
@@ -140,13 +142,22 @@ public final class AdminGuiService {
                 if (!Double.isFinite(chance) || chance < 0D || chance > 100D) throw new IllegalArgumentException();
                 plugin.getConfig().set("rewards.slots." + slot + ".chance", chance);
                 plugin.saveConfig();
-                plugin.msg(player, "&aReward chance set to &f" + trim(chance) + "%&a.");
+                plugin.msg(player, "&aReward weight set to &f" + trim(chance) + "&a.");
+                openRewards(player);
+                return;
+            }
+            if (path.equals("rewards.hit-reward-chance")) {
+                double chance = Double.parseDouble(value);
+                if (!Double.isFinite(chance) || chance < 0D || chance > 100D) throw new IllegalArgumentException();
+                plugin.getConfig().set(path, chance);
+                plugin.saveConfig();
+                plugin.msg(player, "&aReward hit chance set to &f" + trim(chance) + "%&a.");
                 openRewards(player);
                 return;
             }
 
             switch(path){
-                case "boss.name","messages.prefix","messages.countdown","messages.spawned","messages.defeated","messages.slayer","messages.top-hitter","messages.no-spawn","messages.already-active","messages.stopped" -> plugin.getConfig().set(path,value);
+                case "boss.name","messages.prefix","messages.countdown","messages.spawned","messages.defeated","messages.slayer","messages.top-hitter","messages.empty-pockets","messages.no-spawn","messages.already-active","messages.stopped" -> plugin.getConfig().set(path,value);
                 case "schedule.time" -> { try{LocalTime.parse(value,TIME);}catch(DateTimeParseException ex){throw new IllegalArgumentException();} plugin.getConfig().set(path,value); }
                 case "boss.hits" -> { plugin.getConfig().set(path,Math.max(1,Integer.parseInt(value))); plugin.getConfig().set("boss.auto-scale-health",false); }
                 case "boss.minimum-melee-charge" -> { double pct=Double.parseDouble(value); if(pct>1D)pct/=100D; if(!Double.isFinite(pct)||pct<0.1D||pct>1D)throw new IllegalArgumentException(); plugin.getConfig().set(path,pct); }
