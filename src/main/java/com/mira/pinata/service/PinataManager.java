@@ -180,11 +180,46 @@ public final class PinataManager {
 
     private void rollPerHitLoot(Player player) {
         if (!plugin.getConfig().getBoolean("rewards.per-hit-enabled", true)) return;
+
+        List<RewardEntry> entries = configuredRewards();
+        if (entries.isEmpty()) return;
+
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        for (RewardEntry entry : configuredRewards()) {
-            if (entry.chance() <= 0.0D) continue;
-            if (entry.chance() >= 100.0D || random.nextDouble(100.0D) < entry.chance()) give(player, entry.item());
+        double rewardChance = Math.max(0.0D, Math.min(100.0D, plugin.getConfig().getDouble("rewards.hit-reward-chance", 70.0D)));
+        if (random.nextDouble(100.0D) >= rewardChance) {
+            sendEmptyPockets(player);
+            return;
         }
+
+        RewardEntry selected = chooseWeightedReward(entries, random);
+        if (selected == null) {
+            sendEmptyPockets(player);
+            return;
+        }
+        give(player, selected.item());
+    }
+
+    private RewardEntry chooseWeightedReward(List<RewardEntry> entries, ThreadLocalRandom random) {
+        double totalWeight = 0.0D;
+        for (RewardEntry entry : entries) {
+            if (entry.chance() > 0.0D) totalWeight += entry.chance();
+        }
+        if (totalWeight <= 0.0D) return null;
+
+        double roll = random.nextDouble(totalWeight);
+        RewardEntry fallback = null;
+        for (RewardEntry entry : entries) {
+            if (entry.chance() <= 0.0D) continue;
+            fallback = entry;
+            roll -= entry.chance();
+            if (roll < 0.0D) return entry;
+        }
+        return fallback;
+    }
+
+    private void sendEmptyPockets(Player player) {
+        String message = plugin.getConfig().getString("messages.empty-pockets", "&e%name%'s Pockets are empty!");
+        plugin.msg(player, message.replace("%name%", currentBossName));
     }
 
     public List<RewardEntry> configuredRewards() {
@@ -251,7 +286,8 @@ public final class PinataManager {
         Player player = Bukkit.getPlayer(top);
         List<RewardEntry> entries = configuredRewards();
         if (player == null || entries.isEmpty()) return;
-        give(player, entries.get(ThreadLocalRandom.current().nextInt(entries.size())).item());
+        RewardEntry selected = chooseWeightedReward(entries, ThreadLocalRandom.current());
+        if (selected != null) give(player, selected.item());
     }
 
     private void give(Player player, ItemStack reward) {
