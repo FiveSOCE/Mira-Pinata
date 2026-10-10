@@ -52,7 +52,7 @@ public final class PinataManager {
     }
 
     public boolean acceptRealMeleeHit(Player player) {
-        AttributeInstance attackSpeed = player.getAttribute(Attribute.ATTACK_SPEED);
+        AttributeInstance attackSpeed = player.getAttribute(attribute("ATTACK_SPEED", "GENERIC_ATTACK_SPEED"));
         double attacksPerSecond = attackSpeed == null ? 4.0D : Math.max(0.1D, attackSpeed.getValue());
         double charge = Math.max(0.1D, Math.min(1.0D, plugin.getConfig().getDouble("boss.minimum-melee-charge", 0.9D)));
         long requiredMillis = Math.max(50L, Math.round((1000.0D / attacksPerSecond) * charge));
@@ -66,7 +66,7 @@ public final class PinataManager {
     public void restoreCombatBodyNextTick() {
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (!active()) return;
-            AttributeInstance max = pinata.getAttribute(Attribute.MAX_HEALTH);
+            AttributeInstance max = pinata.getAttribute(attribute("MAX_HEALTH", "GENERIC_MAX_HEALTH"));
             double maxHealth = max == null ? 100.0D : max.getValue();
             pinata.setHealth(Math.min(maxHealth, 100.0D));
         });
@@ -120,10 +120,10 @@ public final class PinataManager {
             zombie.setMaximumNoDamageTicks(0);
             zombie.setCustomName(plugin.colour(currentBossName));
             zombie.setCustomNameVisible(true);
-            AttributeInstance maxHealth = zombie.getAttribute(Attribute.MAX_HEALTH);
+            AttributeInstance maxHealth = zombie.getAttribute(attribute("MAX_HEALTH", "GENERIC_MAX_HEALTH"));
             if (maxHealth != null) maxHealth.setBaseValue(100.0D);
             zombie.setHealth(100.0D);
-            AttributeInstance damage = zombie.getAttribute(Attribute.ATTACK_DAMAGE);
+            AttributeInstance damage = zombie.getAttribute(attribute("ATTACK_DAMAGE", "GENERIC_ATTACK_DAMAGE"));
             if (damage != null) damage.setBaseValue(Math.max(0.0, plugin.getConfig().getDouble("boss.attack-damage", 2.0)));
             applyGear(zombie);
         });
@@ -247,14 +247,19 @@ public final class PinataManager {
         if (plugin.getConfig().getBoolean("effects.invisibility.enabled", true)) enabled.add("invisibility");
         if (enabled.isEmpty()) return;
         switch (enabled.get(ThreadLocalRandom.current().nextInt(enabled.size()))) {
-            case "speed" -> pinata.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Math.max(1, plugin.getConfig().getInt("effects.speed.duration-ticks", 40)), Math.max(0, plugin.getConfig().getInt("effects.speed.amplifier", 9)), false, true, true));
-            case "invisibility" -> pinata.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Math.max(1, plugin.getConfig().getInt("effects.invisibility.duration-ticks", 40)), 0, false, true, true));
+            case "speed" -> pinata.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Math.max(1, plugin.getConfig().getInt("effects.speed.duration-ticks", 40)), Math.max(0, plugin.getConfig().getInt("effects.speed.amplifier", 9)), false, true));
+            case "invisibility" -> pinata.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Math.max(1, plugin.getConfig().getInt("effects.invisibility.duration-ticks", 40)), 0, false, true));
             case "baby" -> {
                 pinata.setBaby();
                 long duration = Math.max(1, plugin.getConfig().getLong("effects.baby.duration-ticks", 60));
                 Bukkit.getScheduler().runTaskLater(plugin, () -> { if (active()) pinata.setAdult(); }, duration);
             }
         }
+    }
+
+    private Attribute attribute(String modernName, String legacyName) {
+        try { return Attribute.valueOf(modernName); }
+        catch (IllegalArgumentException ignored) { return Attribute.valueOf(legacyName); }
     }
 
     private void finishEvent(UUID slayerUuid) {
@@ -275,8 +280,6 @@ public final class PinataManager {
             rewardTopHitter(topId);
         }
         plugin.stats().record(ChatColor.stripColor(plugin.colour(bossName)), slayerUuid, slayerName, topId, topName, topHits);
-        plugin.core().milestones().award(slayerUuid, "mirapinata.slayer", "MiraPinata", Map.of("boss", ChatColor.stripColor(plugin.colour(bossName))));
-        if (topId != null) plugin.core().milestones().award(topId, "mirapinata.top_hitter", "MiraPinata", Map.of("hits", Integer.toString(topHits)));
         CosmeticsBridge.playNearby(death, "pinata_death", 64.0D);
         hits.clear(); lastAcceptedMelee.clear();
     }
