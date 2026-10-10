@@ -2,9 +2,9 @@
 
 ## Download
 
-**Latest compatibility release: v0.1.8**
+**Latest compatibility release: v0.1.9 (compatibility branch; not yet released)**
 
-[**Download MiraPinata-0.1.8.jar**](https://github.com/FiveSOCE/Mira-Pinata/releases/download/v0.1.8/MiraPinata-0.1.8.jar)
+[**Download MiraPinata-0.1.9.jar**](https://github.com/FiveSOCE/Mira-Pinata/releases/download/v0.1.8/MiraPinata-0.1.8.jar)
 
 [View all releases](https://github.com/FiveSOCE/Mira-Pinata/releases)
 
@@ -21,11 +21,12 @@ MiraPinata is a GUI-driven server boss event for the Mira Paper server suite. It
 
 ## Requirements / Dependencies
 
-- Paper 1.21.11
-- Java 21
-- MiraCore required by current source
-- PlaceholderAPI optional
+- Paper 1.18.2 or newer (single-JAR compatibility target; verify on each server build)
+- Java 17 or newer
+- No MiraCore dependency
+- PlaceholderAPI optional (leaderboard placeholders)
 - MiraNPC optional integration
+- MiraCosmetics optional integration
 
 ## How MiraPinata Works
 
