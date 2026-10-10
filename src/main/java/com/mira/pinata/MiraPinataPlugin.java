@@ -1,8 +1,5 @@
 package com.mira.pinata;
 
-import com.mira.core.api.MiraCore;
-import com.mira.core.api.MiraCoreProvider;
-import com.mira.core.api.ModuleHealth;
 import com.mira.pinata.command.PinataCommand;
 import com.mira.pinata.gui.AdminGuiService;
 import com.mira.pinata.listener.AdminGuiListener;
@@ -21,7 +18,6 @@ public final class MiraPinataPlugin extends JavaPlugin {
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacyAmpersand();
     private static final String CHAT_PREFIX = "&5&lMira &8>> &r";
 
-    private MiraCore core;
     private PinataManager manager;
     private AdminGuiService gui;
     private PinataStatsService stats;
@@ -29,11 +25,9 @@ public final class MiraPinataPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        core = MiraCoreProvider.require();
         stats = new PinataStatsService(this);
         manager = new PinataManager(this);
         gui = new AdminGuiService(this, manager);
-        core.modules().register(this, "MiraPinata");
 
         var command = getCommand("mpinata");
         if (command != null) command.setExecutor(new PinataCommand(gui));
@@ -47,17 +41,14 @@ public final class MiraPinataPlugin extends JavaPlugin {
         }
 
         manager.startScheduler();
-        core.modules().setHealth(this, ModuleHealth.HEALTHY, "Named variants, event stats and leaderboard placeholders ready");
-        getLogger().info("MiraPinata v" + getPluginMeta().getVersion() + " enabled.");
+        getLogger().info("MiraPinata v" + getDescription().getVersion() + " enabled.");
     }
 
     @Override
     public void onDisable() {
         if (manager != null) manager.stopEvent(false);
-        if (core != null) core.modules().unregister(this);
     }
 
-    public MiraCore core() { return core; }
     public PinataStatsService stats() { return stats; }
     public PinataManager manager() { return manager; }
 
