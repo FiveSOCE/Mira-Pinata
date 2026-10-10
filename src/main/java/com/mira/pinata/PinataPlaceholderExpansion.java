@@ -16,7 +16,7 @@ public final class PinataPlaceholderExpansion extends PlaceholderExpansion {
 
     @Override public @NotNull String getIdentifier() { return "mirapinata"; }
     @Override public @NotNull String getAuthor() { return "FiveS"; }
-    @Override public @NotNull String getVersion() { return plugin.getPluginMeta().getVersion(); }
+    @Override public @NotNull String getVersion() { return plugin.getDescription().getVersion(); }
     @Override public boolean persist() { return true; }
 
     @Override
