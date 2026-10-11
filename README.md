@@ -1,5 +1,9 @@
 # MiraPinata
 
+## License
+
+**All Rights Reserved.** Copyright (c) 2026 FiveSOCE. This repository is proprietary; no permission to use, copy, modify, or redistribute the software is granted without prior written permission, except as required by applicable law. See [LICENSE](LICENSE).
+
 ## Download
 
 **Latest published release: v0.1.8**
