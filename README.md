@@ -8,10 +8,10 @@
 
 | Paper version | Java | Filename | Download |
 | --- | --- | --- | --- |
-| **1.18.2** | 17 | `MiraPinata_1.18.2.jar` | [Legacy release](https://github.com/FiveSOCE/Mira-Pinata/releases/tag/dev-1.18.2) |
-| **1.21.11–26.2** | Java 21 baseline, newer servers may require Java 25 | `MiraPinata_1.21.11-26.2.jar` | [Modern release](https://github.com/FiveSOCE/Mira-Pinata/releases/tag/compat-modern-1.21.11-26.2) |
+| **1.18.2** | 17 | `MiraPinata_1.18.2.jar` | [Download legacy JAR](https://github.com/FiveSOCE/Mira-Pinata/releases/download/dev-1.18.2/MiraPinata_1.18.2.jar) |
+| **1.21.11–26.2** | Java 21 baseline, newer servers may require Java 25 | `MiraPinata_1.21.11-26.2.jar` | [Download modern JAR](https://github.com/FiveSOCE/Mira-Pinata/releases/download/compat-modern-1.21.11-26.2/MiraPinata_1.21.11-26.2.jar) |
 
-The release entries must contain the named JAR before they can be downloaded. Compatibility is verified through build/bytecode checks first; full runtime testing and Paper 1.19–1.21.10 validation remain outstanding.
+Both named GitHub release assets have been verified after successful CI builds. Compatibility is verified through build/bytecode checks first; full runtime testing and Paper 1.19–1.21.10 validation remain outstanding.
 
 [Legacy source](https://github.com/FiveSOCE/Mira-Pinata/tree/compat/1.18.2) · [Modern source](https://github.com/FiveSOCE/Mira-Pinata/tree/compat/modern-1.21.11-26.2) · [All releases](https://github.com/FiveSOCE/Mira-Pinata/releases)
 
