@@ -4,13 +4,23 @@
 
 **All Rights Reserved.** Copyright (c) 2026 FiveSOCE. This repository is proprietary; no permission to use, copy, modify, or redistribute the software is granted without prior written permission, except as required by applicable law. See [LICENSE](LICENSE).
 
-## Download
+## Download by Minecraft version
 
-**Latest published release: v0.1.8**
+| Paper version | Java | Filename | Download |
+| --- | --- | --- | --- |
+| **1.18.2** | 17 | `MiraPinata_1.18.2.jar` | [Legacy release](https://github.com/FiveSOCE/Mira-Pinata/releases/tag/dev-1.18.2) |
+| **1.21.11–26.2** | Java 21 baseline, newer servers may require Java 25 | `MiraPinata_1.21.11-26.2.jar` | [Modern release](https://github.com/FiveSOCE/Mira-Pinata/releases/tag/compat-modern-1.21.11-26.2) |
 
-The standalone v0.1.9 compatibility build is currently available as a CI artifact from the [successful GitHub Actions build](https://github.com/FiveSOCE/Mira-Pinata/actions/runs/38015938572). Open the run's **Artifacts** section and download **MiraPinata-0.1.9**. This is a test build from the compatibility branch, not a published release yet.
+The release entries must contain the named JAR before they can be downloaded. Compatibility is verified through build/bytecode checks first; full runtime testing and Paper 1.19–1.21.10 validation remain outstanding.
 
-[View published releases](https://github.com/FiveSOCE/Mira-Pinata/releases)
+[Legacy source](https://github.com/FiveSOCE/Mira-Pinata/tree/compat/1.18.2) · [Modern source](https://github.com/FiveSOCE/Mira-Pinata/tree/compat/modern-1.21.11-26.2) · [All releases](https://github.com/FiveSOCE/Mira-Pinata/releases)
+
+## Dependencies and installation
+
+- **Required:** Paper matching the selected JAR and suitable Java runtime.
+- **Required Mira plugins:** None. Both new builds are independently compiled and their plugin metadata declares **no MiraCore dependency**.
+- **Optional:** PlaceholderAPI for leaderboard placeholders, MiraNPC for display integrations, MiraCosmetics for visuals and sounds.
+- **Install:** Remove the old `MiraPinata-0.1.8.jar` or other Pinata JAR; install only one version-specific JAR, back up `plugins/MiraPinata/` and restart.
 
 ## v0.1.8 per-hit reward fix
 
