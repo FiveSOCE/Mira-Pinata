@@ -25,4 +25,4 @@ tasks.withType<JavaCompile>().configureEach {
     options.release.set(bytecodeJavaVersion.get())
 }
 
-tasks.jar { archiveFileName.set("MiraPinata-${project.version}.jar") }
+tasks.jar { archiveFileName.set("MiraPinata_1.18.2.jar") }
