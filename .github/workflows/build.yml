@@ -1,17 +1,14 @@
-name: Build
+name: MiraPinata standalone Paper 1.18.2
 on:
   push:
-    branches: [main, "compat/**"]
-  pull_request:
-    branches: [main]
+    branches: ['compat/1.18.2']
   workflow_dispatch:
-
 permissions:
-  contents: read
-
+  contents: write
 jobs:
-  build:
+  legacy:
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -21,10 +18,27 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10'
-      - name: Compile against the oldest supported Paper API
-        run: gradle clean test build -PpaperApiVersion=1.18.2-R0.1-SNAPSHOT -PcompileJavaVersion=17 -PbytecodeJavaVersion=17 --stacktrace
+      - name: Compile and test
+        run: gradle clean test build --no-daemon --stacktrace
+      - name: Verify JAR and plugin metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR=build/libs/MiraPinata_1.18.2.jar
+          test -s "$JAR"
+          jar tf "$JAR" | grep -Fx plugin.yml
+          jar tf "$JAR" | grep -Fx com/mira/pinata/MiraPinataPlugin.class
+          javap -verbose -classpath "$JAR" com.mira.pinata.MiraPinataPlugin | grep -F 'major version: 61'
+          unzip -p "$JAR" plugin.yml | grep -F "api-version: '1.18'"
+          ! unzip -p "$JAR" plugin.yml | grep -E '^depend:'
       - uses: actions/upload-artifact@v4
         with:
-          name: MiraPinata-0.1.9
-          path: build/libs/MiraPinata-0.1.9.jar
+          name: MiraPinata_1.18.2
+          path: build/libs/MiraPinata_1.18.2.jar
           if-no-files-found: error
+      - name: Publish standalone legacy prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view dev-1.18.2 >/dev/null 2>&1 || gh release create dev-1.18.2 --prerelease --title 'MiraPinata standalone 1.18.2' --notes 'Paper 1.18.2 Java 17 standalone. No MiraCore required. In-game validation pending.' --target "$GITHUB_SHA"
+          gh release upload dev-1.18.2 build/libs/MiraPinata_1.18.2.jar --clobber
