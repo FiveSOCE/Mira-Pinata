@@ -1,7 +1,7 @@
 name: MiraPinata
 version: 0.1.9
 main: com.mira.pinata.MiraPinataPlugin
-api-version: '1.18'
+api-version: '1.21'
 authors: [FiveS]
 description: GUI-driven fighting pinata boss event with named variants and leaderboard data.
 softdepend: [PlaceholderAPI, MiraNPC, MiraCosmetics]
