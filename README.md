@@ -1,5 +1,16 @@
 # MiraPinata
 
+## Downloads and compatibility
+
+| Server target | Java | Final JAR name | Download |
+| --- | --- | --- | --- |
+| **Paper 1.18.2** | 17 | `MiraPinata_1.18.2.jar` | [Download 1.18.2 JAR](https://github.com/FiveSOCE/Mira-Pinata/releases/download/dev-1.18.2/MiraPinata_1.18.2.jar) |
+| **Paper 1.21.11–26.2** | Java 21 baseline; Paper 26.2 may require Java 25 | `MiraPinata_1.21.11-26.2.jar` | [Download modern JAR](https://github.com/FiveSOCE/Mira-Pinata/releases/download/compat-modern-1.21.11-26.2/MiraPinata_1.21.11-26.2.jar) |
+
+Install only one versioned JAR. Release assets are published; complete in-game compatibility is not implied by compilation.
+
+[Legacy source](https://github.com/FiveSOCE/Mira-Pinata/tree/compat/1.18.2) · [Modern source](https://github.com/FiveSOCE/Mira-Pinata) · [All releases](https://github.com/FiveSOCE/Mira-Pinata/releases)
+
 ## License
 
 **All Rights Reserved.** Copyright (c) 2026 FiveSOCE. This repository is proprietary; no permission to use, copy, modify, or redistribute the software is granted without prior written permission, except as required by applicable law. See [LICENSE](LICENSE).
